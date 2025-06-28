@@ -5,6 +5,7 @@ import { predictDogGrowthWithGemini } from './utils/geminiApi';
 import { saveDataWithFallback } from './utils/liffCompatibleApi';
 import { logPredictionStart, logPredictionComplete, logSatisfactionRating } from './utils/analytics';
 import './utils/dataExport'; // データエクスポート機能を初期化
+import { startDataMonitoring } from './utils/dataSync';
 import LoginScreen from './components/LoginScreen';
 import FormScreen from './components/FormScreen';
 import ProcessingScreen from './components/ProcessingScreen';
@@ -50,6 +51,9 @@ function App() {
       }
     };
     init();
+    
+    // データ監視を開始
+    startDataMonitoring();
   }, []);
 
   // LINEログインボタン押下時の処理

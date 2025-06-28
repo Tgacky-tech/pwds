@@ -5,12 +5,14 @@ export const sendToSupabaseLiff = async (data: any): Promise<string | null> => {
   return new Promise((resolve) => {
     try {
       const xhr = new XMLHttpRequest();
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/prediction_logs`;
+      const baseUrl = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/prediction_logs`;
+      const apikey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
-      xhr.open('POST', url, true);
+      // JWTトークンをURLパラメータとして送信（LIFF環境でのヘッダー制限回避）
+      const urlWithAuth = `${baseUrl}?apikey=${encodeURIComponent(apikey)}`;
+      
+      xhr.open('POST', urlWithAuth, true);
       xhr.setRequestHeader('Content-Type', 'application/json');
-      xhr.setRequestHeader('apikey', import.meta.env.VITE_SUPABASE_ANON_KEY);
-      xhr.setRequestHeader('Authorization', `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`);
       xhr.setRequestHeader('Prefer', 'return=representation');
       
       xhr.onreadystatechange = function() {
