@@ -42,6 +42,14 @@ CREATE INDEX idx_prediction_logs_satisfaction ON prediction_logs(satisfaction_ra
 -- RLS (Row Level Security) 設定
 ALTER TABLE prediction_logs ENABLE ROW LEVEL SECURITY;
 
+-- 匿名ユーザーでも挿入可能なポリシー
+CREATE POLICY "Allow anonymous insert" ON prediction_logs
+  FOR INSERT WITH CHECK (true);
+
+-- 匿名ユーザーでも更新可能なポリシー（予測完了・満足度評価用）
+CREATE POLICY "Allow anonymous update" ON prediction_logs
+  FOR UPDATE USING (true) WITH CHECK (true);
+
 -- 管理者用ビュー（CSV出力用）
 CREATE VIEW prediction_analytics AS
 SELECT 
@@ -68,10 +76,6 @@ FROM prediction_logs
 WHERE prediction_completed_at IS NOT NULL
 ORDER BY prediction_started_at DESC;
 
--- ユーザーは自分のデータのみアクセス可能
-CREATE POLICY "Users can only access their own logs" ON prediction_logs
-  FOR ALL USING (line_user_id = current_setting('app.current_user_id', true));
-
--- 匿名ユーザーでも挿入・更新可能（LINEユーザーID認証）
-CREATE POLICY "Allow anonymous insert and update" ON prediction_logs
-  FOR ALL WITH CHECK (true);
+-- 注意: 既存のポリシーがある場合は先に削除
+-- DROP POLICY IF EXISTS "Users can only access their own logs" ON prediction_logs;
+-- DROP POLICY IF EXISTS "Allow anonymous insert and update" ON prediction_logs;

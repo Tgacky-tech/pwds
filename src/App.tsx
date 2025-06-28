@@ -6,6 +6,7 @@ import { saveDataWithFallback } from './utils/liffCompatibleApi';
 import { logPredictionStart, logPredictionComplete, logSatisfactionRating } from './utils/analytics';
 import './utils/dataExport'; // データエクスポート機能を初期化
 import { startDataMonitoring } from './utils/dataSync';
+import './utils/supabaseDebug'; // Supabaseデバッグ機能を初期化
 import LoginScreen from './components/LoginScreen';
 import FormScreen from './components/FormScreen';
 import ProcessingScreen from './components/ProcessingScreen';

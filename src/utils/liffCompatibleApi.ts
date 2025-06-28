@@ -8,11 +8,13 @@ export const sendToSupabaseLiff = async (data: any): Promise<string | null> => {
       const baseUrl = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/prediction_logs`;
       const apikey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
-      // JWTトークンをURLパラメータとして送信（LIFF環境でのヘッダー制限回避）
-      const urlWithAuth = `${baseUrl}?apikey=${encodeURIComponent(apikey)}`;
+      // JWTトークンをクリーンアップ（改行文字等を除去）
+      const cleanApikey = apikey.replace(/\s+/g, '').trim();
       
-      xhr.open('POST', urlWithAuth, true);
+      xhr.open('POST', baseUrl, true);
       xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.setRequestHeader('apikey', cleanApikey);
+      xhr.setRequestHeader('Authorization', `Bearer ${cleanApikey}`);
       xhr.setRequestHeader('Prefer', 'return=representation');
       
       xhr.onreadystatechange = function() {
