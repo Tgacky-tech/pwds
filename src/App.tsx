@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { DogFormData, PredictionResult, User } from './types';
 import { predictDogGrowthWithGemini } from './utils/geminiApi';
-import { savePredictionStart, updatePredictionCompletion, saveSatisfactionRating } from './utils/supabaseApi';
+// import { savePredictionStart, updatePredictionCompletion, saveSatisfactionRating } from './utils/supabaseApi';
+import { logPredictionStart, logPredictionComplete, logSatisfactionRating } from './utils/analytics';
 import LoginScreen from './components/LoginScreen';
 import FormScreen from './components/FormScreen';
 import ProcessingScreen from './components/ProcessingScreen';
@@ -67,32 +68,20 @@ function App() {
     setFormData(data);
     setCurrentState('processing');
     
+    const startTime = Date.now();
+    
     try {
-      // 1. 予測開始時にフォームデータを保存
-      let logId: string | null = null;
+      // 1. 分析用ログ記録（予測開始）
       if (user) {
-        try {
-          logId = await savePredictionStart(data, user);
-          setCurrentLogId(logId);
-          console.log('Prediction started, log ID:', logId);
-        } catch (logError) {
-          console.warn('Failed to save log, continuing without logging:', logError);
-          // ログ保存に失敗してもアプリは続行
-        }
+        logPredictionStart(data, user);
       }
 
       // 2. AI予測を実行
       const predictionResult = await predictDogGrowthWithGemini(data);
       
-      // 3. 予測完了時に体重のみ保存
-      if (logId) {
-        try {
-          await updatePredictionCompletion(logId, predictionResult.predictedWeight);
-          console.log('Prediction completed');
-        } catch (logError) {
-          console.warn('Failed to update completion log:', logError);
-        }
-      }
+      // 3. 分析用ログ記録（予測完了）
+      const processingTime = Date.now() - startTime;
+      logPredictionComplete(predictionResult.predictedWeight, processingTime);
 
       setResult(predictionResult);
       setCurrentState('result');
@@ -112,14 +101,9 @@ function App() {
   };
 
   const handleSatisfactionRating = async (rating: 'yes' | 'no') => {
-    if (currentLogId) {
-      try {
-        await saveSatisfactionRating(currentLogId, rating);
-        console.log('Satisfaction rating saved:', rating);
-      } catch (error) {
-        console.error('Failed to save satisfaction rating:', error);
-      }
-    }
+    // 分析用ログ記録
+    logSatisfactionRating(rating);
+    console.log('Satisfaction rating recorded:', rating);
   };
 
   const handleShowTerms = () => {
