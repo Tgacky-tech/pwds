@@ -24,7 +24,7 @@ export const predictDogGrowthWithGemini = async (formData: DogFormData): Promise
     
     return {
       predictedWeight: predictionData.predictedWeight,
-      imageUrl: '/public/image copy copy copy copy.png', // 実際の画像生成APIで置き換え
+      imageUrl: '/image.png', // publicフォルダの画像を参照
       imagePrompt: imagePrompt, // 画像生成用プロンプト
       advice: {
         health: predictionData.healthAdvice,

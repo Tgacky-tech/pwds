@@ -2,17 +2,34 @@ import { supabase, type PredictionLog } from '../lib/supabase';
 import { DogFormData, PredictionResult, User } from '../types';
 
 // 予測開始時にフォームデータを保存
+// データサニタイズ関数
+const sanitizeString = (str: string): string => {
+  if (!str) return '';
+  // 制御文字や無効なUTF-8文字を除去
+  return str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim();
+};
+
 export const savePredictionStart = async (
   formData: DogFormData,
   user: User
 ): Promise<string> => {
   try {
+    // データ検証
+    const userId = sanitizeString(user.lineUserId);
+    const displayName = sanitizeString(user.displayName);
+    
+    if (!userId) {
+      throw new Error('Invalid user ID');
+    }
+    
+    console.log('Preparing log data for user:', { userId, displayName });
+    
     const logData: Partial<PredictionLog> = {
-      line_user_id: user.lineUserId,
-      display_name: user.displayName,
+      line_user_id: userId,
+      display_name: displayName || 'Unknown User',
       purchase_source: formData.purchaseSource,
       has_purchase_experience: formData.hasPurchaseExperience,
-      breed: formData.breed,
+      breed: sanitizeString(formData.breed),
       gender: formData.gender,
       birth_date: formData.birthDate,
       current_weight: Number(formData.currentWeight),
@@ -24,6 +41,8 @@ export const savePredictionStart = async (
       mother_adult_weight: formData.motherAdultWeight ? Number(formData.motherAdultWeight) : undefined,
       father_adult_weight: formData.fatherAdultWeight ? Number(formData.fatherAdultWeight) : undefined,
     };
+    
+    console.log('Log data prepared:', logData);
 
     const { data, error } = await supabase
       .from('prediction_logs')

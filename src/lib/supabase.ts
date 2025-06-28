@@ -7,11 +7,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-// LIFF環境対応のオプション設定
+// LIFF環境対応の最小設定
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: false, // LIFF環境ではセッション永続化を無効
-    autoRefreshToken: false, // 自動トークン更新を無効
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+  },
+  global: {
+    fetch: (...args) => fetch(...args),
   },
 });
 
