@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { DogFormData, PredictionResult, User } from './types';
 import { predictDogGrowthWithGemini } from './utils/geminiApi';
 // import { savePredictionStart, updatePredictionCompletion, saveSatisfactionRating } from './utils/supabaseApi';
-import { insertPredictionLog, updatePredictionLogCompletion, updateSatisfactionRating } from './utils/supabaseRestApi';
+import { saveDataWithFallback } from './utils/liffCompatibleApi';
 import { logPredictionStart, logPredictionComplete, logSatisfactionRating } from './utils/analytics';
+import './utils/dataExport'; // データエクスポート機能を初期化
 import LoginScreen from './components/LoginScreen';
 import FormScreen from './components/FormScreen';
 import ProcessingScreen from './components/ProcessingScreen';
@@ -77,7 +78,7 @@ function App() {
       if (user) {
         logPredictionStart(data, user);
         
-        // REST API経由でSupabaseに保存を試行
+        // LIFF互換API経由でデータ保存を試行
         try {
           const logData = {
             line_user_id: user.lineUserId,
@@ -92,11 +93,13 @@ function App() {
             mother_adult_weight: data.motherAdultWeight ? Number(data.motherAdultWeight) : null,
             father_adult_weight: data.fatherAdultWeight ? Number(data.fatherAdultWeight) : null,
           };
-          logId = await insertPredictionLog(logData);
+          logId = await saveDataWithFallback(logData);
           setCurrentLogId(logId);
-          console.log('REST API: Prediction log saved with ID:', logId);
-        } catch (restError) {
-          console.warn('REST API failed, continuing with console logging only:', restError);
+          if (logId) {
+            console.log('✅ Data saved successfully with ID:', logId);
+          }
+        } catch (saveError) {
+          console.warn('All save methods failed:', saveError);
         }
       }
 
@@ -107,13 +110,21 @@ function App() {
       const processingTime = Date.now() - startTime;
       logPredictionComplete(predictionResult.predictedWeight, processingTime);
       
-      // REST API経由で予測完了を更新
+      // 予測完了データをローカルストレージに記録
       if (logId) {
         try {
-          await updatePredictionLogCompletion(logId, predictionResult.predictedWeight);
-          console.log('REST API: Prediction completion updated');
-        } catch (restError) {
-          console.warn('REST API completion update failed:', restError);
+          const completionData = {
+            id: logId,
+            predicted_weight: predictionResult.predictedWeight,
+            prediction_completed_at: new Date().toISOString(),
+            processing_time_ms: processingTime
+          };
+          const localCompletions = JSON.parse(localStorage.getItem('prediction_completions') || '[]');
+          localCompletions.push(completionData);
+          localStorage.setItem('prediction_completions', JSON.stringify(localCompletions));
+          console.log('✅ Prediction completion recorded locally');
+        } catch (localError) {
+          console.warn('Local completion storage failed:', localError);
         }
       }
 
@@ -139,13 +150,20 @@ function App() {
     logSatisfactionRating(rating);
     console.log('Satisfaction rating recorded:', rating);
     
-    // REST API経由で満足度評価を保存
+    // 満足度評価をローカルストレージに記録
     if (currentLogId) {
       try {
-        await updateSatisfactionRating(currentLogId, rating);
-        console.log('REST API: Satisfaction rating saved');
-      } catch (restError) {
-        console.warn('REST API satisfaction update failed:', restError);
+        const satisfactionData = {
+          id: currentLogId,
+          satisfaction_rating: rating,
+          satisfaction_rated_at: new Date().toISOString()
+        };
+        const localSatisfactions = JSON.parse(localStorage.getItem('satisfaction_ratings') || '[]');
+        localSatisfactions.push(satisfactionData);
+        localStorage.setItem('satisfaction_ratings', JSON.stringify(localSatisfactions));
+        console.log('✅ Satisfaction rating recorded locally');
+      } catch (localError) {
+        console.warn('Local satisfaction storage failed:', localError);
       }
     }
   };
