@@ -33,7 +33,13 @@ export const savePredictionStart = async (
 
     if (error) {
       console.error('Supabase insert error:', error);
-      throw new Error('データの保存に失敗しました');
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
+      throw new Error(`データの保存に失敗しました: ${error.message}`);
     }
 
     console.log('Prediction started, log ID:', data.id);
