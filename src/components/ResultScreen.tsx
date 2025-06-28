@@ -11,9 +11,15 @@ interface ResultScreenProps {
 
 const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, onSatisfactionRating }) => {
   const [openSections, setOpenSections] = useState<{ [key: string]: boolean }>({});
+  const [satisfactionRating, setSatisfactionRating] = useState<'yes' | 'no' | null>(null);
 
   const toggleSection = (section: string) => {
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  const handleSatisfactionClick = (rating: 'yes' | 'no') => {
+    setSatisfactionRating(rating);
+    onSatisfactionRating?.(rating);
   };
 
   const renderWeightEvaluation = () => {
@@ -257,20 +263,42 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
                       <h4 className="font-semibold text-gray-800 mb-4 text-center">この結果に満足頂けましたか？</h4>
                       <div className="flex justify-center space-x-4">
                         <button 
-                          onClick={() => onSatisfactionRating?.('yes')}
-                          className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2"
+                          onClick={() => handleSatisfactionClick('yes')}
+                          className={`px-6 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2 ${
+                            satisfactionRating === 'yes' 
+                              ? 'bg-green-600 text-white shadow-lg' 
+                              : 'bg-green-500 hover:bg-green-600 text-white'
+                          }`}
+                          disabled={satisfactionRating !== null}
                         >
                           <span>👍</span>
                           <span>はい</span>
                         </button>
                         <button 
-                          onClick={() => onSatisfactionRating?.('no')}
-                          className="px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2"
+                          onClick={() => handleSatisfactionClick('no')}
+                          className={`px-6 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2 ${
+                            satisfactionRating === 'no' 
+                              ? 'bg-red-600 text-white shadow-lg' 
+                              : 'bg-red-500 hover:bg-red-600 text-white'
+                          }`}
+                          disabled={satisfactionRating !== null}
                         >
                           <span>👎</span>
                           <span>いいえ</span>
                         </button>
                       </div>
+                      {satisfactionRating && (
+                        <div className="mt-4 text-center">
+                          <p className={`text-sm font-medium ${
+                            satisfactionRating === 'yes' ? 'text-green-700' : 'text-red-700'
+                          }`}>
+                            {satisfactionRating === 'yes' 
+                              ? '✅ ありがとうございます！フィードバックを保存しました。' 
+                              : '📝 フィードバックをありがとうございます。今後の改善に活用させていただきます。'
+                            }
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                   </div>
