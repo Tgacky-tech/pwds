@@ -71,9 +71,14 @@ function App() {
       // 1. 予測開始時にフォームデータを保存
       let logId: string | null = null;
       if (user) {
-        logId = await savePredictionStart(data, user);
-        setCurrentLogId(logId);
-        console.log('Prediction started, log ID:', logId);
+        try {
+          logId = await savePredictionStart(data, user);
+          setCurrentLogId(logId);
+          console.log('Prediction started, log ID:', logId);
+        } catch (logError) {
+          console.warn('Failed to save log, continuing without logging:', logError);
+          // ログ保存に失敗してもアプリは続行
+        }
       }
 
       // 2. AI予測を実行
@@ -81,8 +86,12 @@ function App() {
       
       // 3. 予測完了時に体重のみ保存
       if (logId) {
-        await updatePredictionCompletion(logId, predictionResult.predictedWeight);
-        console.log('Prediction completed');
+        try {
+          await updatePredictionCompletion(logId, predictionResult.predictedWeight);
+          console.log('Prediction completed');
+        } catch (logError) {
+          console.warn('Failed to update completion log:', logError);
+        }
       }
 
       setResult(predictionResult);
