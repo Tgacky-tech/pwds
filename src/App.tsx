@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DogFormData, PredictionResult, User } from './types';
 import { predictDogGrowthWithGemini } from './utils/geminiApi';
 // import { savePredictionStart, updatePredictionCompletion, saveSatisfactionRating } from './utils/supabaseApi';
+import { insertPredictionLog, updatePredictionLogCompletion, updateSatisfactionRating } from './utils/supabaseRestApi';
 import { logPredictionStart, logPredictionComplete, logSatisfactionRating } from './utils/analytics';
 import LoginScreen from './components/LoginScreen';
 import FormScreen from './components/FormScreen';
@@ -72,8 +73,31 @@ function App() {
     
     try {
       // 1. 分析用ログ記録（予測開始）
+      let logId: string | null = null;
       if (user) {
         logPredictionStart(data, user);
+        
+        // REST API経由でSupabaseに保存を試行
+        try {
+          const logData = {
+            line_user_id: user.lineUserId,
+            display_name: user.displayName,
+            purchase_source: data.purchaseSource,
+            has_purchase_experience: data.hasPurchaseExperience,
+            breed: data.breed,
+            gender: data.gender,
+            birth_date: data.birthDate,
+            current_weight: Number(data.currentWeight),
+            birth_weight: data.birthWeight ? Number(data.birthWeight) : null,
+            mother_adult_weight: data.motherAdultWeight ? Number(data.motherAdultWeight) : null,
+            father_adult_weight: data.fatherAdultWeight ? Number(data.fatherAdultWeight) : null,
+          };
+          logId = await insertPredictionLog(logData);
+          setCurrentLogId(logId);
+          console.log('REST API: Prediction log saved with ID:', logId);
+        } catch (restError) {
+          console.warn('REST API failed, continuing with console logging only:', restError);
+        }
       }
 
       // 2. AI予測を実行
@@ -82,6 +106,16 @@ function App() {
       // 3. 分析用ログ記録（予測完了）
       const processingTime = Date.now() - startTime;
       logPredictionComplete(predictionResult.predictedWeight, processingTime);
+      
+      // REST API経由で予測完了を更新
+      if (logId) {
+        try {
+          await updatePredictionLogCompletion(logId, predictionResult.predictedWeight);
+          console.log('REST API: Prediction completion updated');
+        } catch (restError) {
+          console.warn('REST API completion update failed:', restError);
+        }
+      }
 
       setResult(predictionResult);
       setCurrentState('result');
@@ -104,6 +138,16 @@ function App() {
     // 分析用ログ記録
     logSatisfactionRating(rating);
     console.log('Satisfaction rating recorded:', rating);
+    
+    // REST API経由で満足度評価を保存
+    if (currentLogId) {
+      try {
+        await updateSatisfactionRating(currentLogId, rating);
+        console.log('REST API: Satisfaction rating saved');
+      } catch (restError) {
+        console.warn('REST API satisfaction update failed:', restError);
+      }
+    }
   };
 
   const handleShowTerms = () => {

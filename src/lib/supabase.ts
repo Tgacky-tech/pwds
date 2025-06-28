@@ -7,15 +7,31 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-// LIFF環境対応の最小設定
+// LIFF環境対応 - REST API直接使用
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: false,
     autoRefreshToken: false,
     detectSessionInUrl: false,
   },
+  db: {
+    schema: 'public',
+  },
   global: {
-    fetch: (...args) => fetch(...args),
+    headers: {},
+    fetch: (url, options = {}) => {
+      // LIFF環境用のfetchカスタマイズ
+      const customOptions = {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseAnonKey,
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+          ...options.headers,
+        },
+      };
+      return fetch(url, customOptions);
+    },
   },
 });
 
