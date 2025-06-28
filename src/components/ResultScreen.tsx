@@ -11,17 +11,9 @@ interface ResultScreenProps {
 
 const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, onSatisfactionRating }) => {
   const [openSections, setOpenSections] = useState<{ [key: string]: boolean }>({});
-  const [satisfactionRating, setSatisfactionRating] = useState<'yes' | 'no' | null>(null);
 
   const toggleSection = (section: string) => {
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
-  };
-
-  const handleSatisfactionRating = (rating: 'yes' | 'no') => {
-    setSatisfactionRating(rating);
-    if (onSatisfactionRating) {
-      onSatisfactionRating(rating);
-    }
   };
 
   const renderWeightEvaluation = () => {
@@ -260,6 +252,27 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
                       </div>
                     </div>
 
+                    {/* Satisfaction Survey */}
+                    <div className="bg-gray-50 rounded-lg p-4 border-t border-gray-200">
+                      <h4 className="font-semibold text-gray-800 mb-4 text-center">この結果に満足頂けましたか？</h4>
+                      <div className="flex justify-center space-x-4">
+                        <button 
+                          onClick={() => onSatisfactionRating?.('yes')}
+                          className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2"
+                        >
+                          <span>👍</span>
+                          <span>はい</span>
+                        </button>
+                        <button 
+                          onClick={() => onSatisfactionRating?.('no')}
+                          className="px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2"
+                        >
+                          <span>👎</span>
+                          <span>いいえ</span>
+                        </button>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
               )}
@@ -479,46 +492,6 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
               )}
             </div>
 
-            {/* Satisfaction Rating */}
-            <div className="border border-gray-200 rounded-xl overflow-hidden bg-gradient-to-r from-purple-50 to-pink-50">
-              <div className="px-6 py-4">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">
-                  予測結果にご満足いただけましたか？
-                </h3>
-                <div className="flex space-x-4 justify-center">
-                  <button
-                    onClick={() => handleSatisfactionRating('yes')}
-                    className={`px-8 py-3 rounded-lg font-medium transition-all duration-200 ${
-                      satisfactionRating === 'yes'
-                        ? 'bg-green-500 text-white shadow-lg'
-                        : 'bg-white text-green-600 border border-green-300 hover:bg-green-50'
-                    }`}
-                  >
-                    はい
-                  </button>
-                  <button
-                    onClick={() => handleSatisfactionRating('no')}
-                    className={`px-8 py-3 rounded-lg font-medium transition-all duration-200 ${
-                      satisfactionRating === 'no'
-                        ? 'bg-red-500 text-white shadow-lg'
-                        : 'bg-white text-red-600 border border-red-300 hover:bg-red-50'
-                    }`}
-                  >
-                    いいえ
-                  </button>
-                </div>
-                {satisfactionRating && (
-                  <div className="mt-4 text-center">
-                    <p className="text-sm text-gray-600">
-                      {satisfactionRating === 'yes' 
-                        ? 'ありがとうございます！フィードバックを保存しました。' 
-                        : 'フィードバックをありがとうございます。今後の改善に活用させていただきます。'
-                      }
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
 
             {/* Reset Button */}
             <div className="pt-6">
