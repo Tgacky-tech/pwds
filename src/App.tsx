@@ -3,6 +3,7 @@ import { DogFormData, PredictionResult, User } from './types';
 import { predictDogGrowthWithGemini } from './utils/geminiApi';
 // import { savePredictionStart, updatePredictionCompletion, saveSatisfactionRating } from './utils/supabaseApi';
 import { saveDataWithFallback } from './utils/liffCompatibleApi';
+import { updateSatisfactionRating } from './utils/supabaseUpdate';
 import { logPredictionStart, logPredictionComplete, logSatisfactionRating } from './utils/analytics';
 import './utils/dataExport'; // データエクスポート機能を初期化
 import { startDataMonitoring } from './utils/dataSync';
@@ -155,7 +156,21 @@ function App() {
     logSatisfactionRating(rating);
     console.log('Satisfaction rating recorded:', rating);
     
-    // 満足度評価をローカルストレージに記録
+    // Supabaseデータベースに満足度評価を更新
+    if (currentLogId && !currentLogId.startsWith('local-') && !currentLogId.startsWith('line-') && !currentLogId.startsWith('sheets-')) {
+      try {
+        const success = await updateSatisfactionRating(currentLogId, rating);
+        if (success) {
+          console.log('✅ Satisfaction rating updated in Supabase');
+        } else {
+          console.warn('❌ Failed to update satisfaction rating in Supabase');
+        }
+      } catch (updateError) {
+        console.warn('❌ Satisfaction rating update error:', updateError);
+      }
+    }
+    
+    // 満足度評価をローカルストレージに記録（フォールバック）
     if (currentLogId) {
       try {
         const satisfactionData = {

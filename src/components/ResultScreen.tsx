@@ -260,20 +260,6 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
                       </div>
                     </div>
 
-                    {/* Satisfaction Survey */}
-                    <div className="bg-gray-50 rounded-lg p-4 border-t border-gray-200">
-                      <h4 className="font-semibold text-gray-800 mb-4 text-center">この結果に満足頂けましたか？</h4>
-                      <div className="flex justify-center space-x-4">
-                        <button className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2">
-                          <span>👍</span>
-                          <span>はい</span>
-                        </button>
-                        <button className="px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2">
-                          <span>👎</span>
-                          <span>いいえ</span>
-                        </button>
-                      </div>
-                    </div>
                   </div>
                 </div>
               )}
