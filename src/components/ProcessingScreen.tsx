@@ -6,10 +6,13 @@ const ProcessingScreen: React.FC = () => {
   useEffect(() => {
     const textMessages = [
       { time: 0, text: 'AIがあなたの愛犬の未来を予測中です...' },
-      { time: 2000, text: '犬種データベースを参照しています...' },
-      { time: 4000, text: '成長パターンを分析中...' },
-      { time: 6000, text: '予測画像を生成しています...' },
-      { time: 7500, text: '専門アドバイスを準備中...' }
+      { time: 3000, text: '犬種データベースを参照しています...' },
+      { time: 6000, text: '成長パターンを分析中...' },
+      { time: 9000, text: 'AI画像生成を開始しています...' },
+      { time: 15000, text: 'FLUX.1で愛犬の成犬姿を生成中...' },
+      { time: 30000, text: '高品質な画像を作成中です...' },
+      { time: 60000, text: 'もう少しお待ちください...' },
+      { time: 90000, text: '最終調整を行っています...' }
     ];
     
     const timers = textMessages.map(({ time, text }) => 
@@ -53,7 +56,7 @@ const ProcessingScreen: React.FC = () => {
         </div>
         
         <p className="text-sm text-gray-500">
-          しばらくお待ちください（約10秒）
+          画像生成完了まで約2-3分お待ちください
         </p>
       </div>
     </div>
