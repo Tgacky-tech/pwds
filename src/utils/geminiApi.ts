@@ -1,4 +1,5 @@
 import { DogFormData, PredictionResult, WeightEvaluation } from '../types';
+import { generateDogImage } from './fluxApi';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
@@ -22,9 +23,18 @@ export const predictDogGrowthWithGemini = async (formData: DogFormData): Promise
     // 2. 画像生成用プロンプトを生成
     const imagePrompt = await generateImagePrompt(formData, predictionData.predictedWeight);
     
+    // 3. FLUX.1で画像を生成
+    console.log('🎨 FLUX.1画像生成開始...');
+    const generatedImageUrl = await generateDogImage({
+      prompt: imagePrompt,
+      breed: formData.breed || 'ミックス',
+      gender: formData.gender === 'male' ? 'オス' : 'メス',
+      predictedWeight: predictionData.predictedWeight
+    });
+    
     return {
       predictedWeight: predictionData.predictedWeight,
-      imageUrl: '/image.png', // publicフォルダの画像を参照
+      imageUrl: generatedImageUrl || '/image.png', // FLUX.1生成画像、失敗時はフォールバック
       imagePrompt: imagePrompt, // 画像生成用プロンプト
       advice: {
         health: predictionData.healthAdvice,
