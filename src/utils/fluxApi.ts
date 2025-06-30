@@ -44,6 +44,7 @@ export const generateDogImage = async ({
       return result.imageUrl;
     } else {
       console.error('❌ 画像生成失敗:', result.error);
+      console.error('❌ エラー詳細:', result);
       return null;
     }
     

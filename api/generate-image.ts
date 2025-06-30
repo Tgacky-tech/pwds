@@ -1,5 +1,3 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-
 interface FluxApiResponse {
   id: string;
   status: 'starting' | 'processing' | 'succeeded' | 'failed' | 'canceled';
@@ -14,12 +12,9 @@ interface GenerateImageRequest {
   predictedWeight: number;
 }
 
-const REPLICATE_API_TOKEN = "dc_fa920707481072ba99eb280e2f3bd246f04be4e8ffce4c19b45c012fef9964b4149809b3d0ecacdf700de0d5332d25ac975a2851cfd1e23358f0be116c0d284e84e94efe35c30a9beb77f418f29b642917729872c48e05c4f5e65ae01ec4491948186e2bcbc8d1b58048c8086b24b6c4929ae5d9bd5a4e962cd13cbfafcd59f7";
+const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN || "dc_fa920707481072ba99eb280e2f3bd246f04be4e8ffce4c19b45c012fef9964b4149809b3d0ecacdf700de0d5332d25ac975a2851cfd1e23358f0be116c0d284e84e94efe35c30a9beb77f418f29b642917729872c48e05c4f5e65ae01ec4491948186e2bcbc8d1b58048c8086b24b6c4929ae5d9bd5a4e962cd13cbfafcd59f7";
 
-export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse
-) {
+export default async function handler(req: any, res: any) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -41,10 +36,19 @@ export default async function handler(
   }
 
   try {
+    console.log('🚀 API呼び出し開始');
+    console.log('📝 リクエストボディ:', req.body);
+    
     const { prompt, breed, gender, predictedWeight }: GenerateImageRequest = req.body;
 
     if (!prompt || !breed || !gender || !predictedWeight) {
+      console.log('❌ 必須パラメータ不足:', { prompt: !!prompt, breed: !!breed, gender: !!gender, predictedWeight: !!predictedWeight });
       return res.status(400).json({ error: 'Missing required parameters' });
+    }
+
+    if (!REPLICATE_API_TOKEN) {
+      console.log('❌ APIトークンが設定されていません');
+      return res.status(500).json({ error: 'REPLICATE_API_TOKEN not configured' });
     }
 
     // 性別の英語変換
@@ -75,6 +79,8 @@ export default async function handler(
       }
     };
     
+    console.log('📤 FLUX.1 APIリクエスト送信...');
+    
     // 画像生成リクエスト
     const response = await fetch("https://api.replicate.com/v1/predictions", {
       method: "POST",
@@ -82,8 +88,12 @@ export default async function handler(
       body: JSON.stringify(data)
     });
     
+    console.log('📥 レスポンスステータス:', response.status);
+    
     if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
+      const errorText = await response.text();
+      console.log('❌ API リクエスト失敗:', errorText);
+      throw new Error(`API request failed: ${response.status} - ${errorText}`);
     }
     
     const prediction = await response.json() as FluxApiResponse;
@@ -91,9 +101,9 @@ export default async function handler(
     
     console.log('📝 予測ID:', predictionId);
     
-    // 生成完了まで待機（最大5分）
+    // 生成完了まで待機（最大30秒でテスト）
     let attempts = 0;
-    const maxAttempts = 150; // 5分 (2秒 × 150回)
+    const maxAttempts = 15; // 30秒 (2秒 × 15回)
     
     while (attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 2000)); // 2秒待機
@@ -133,8 +143,10 @@ export default async function handler(
     
   } catch (error) {
     console.error('❌ FLUX.1 画像生成エラー:', error);
+    console.error('エラースタック:', error instanceof Error ? error.stack : 'No stack trace');
     return res.status(500).json({ 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      details: error instanceof Error ? error.stack : 'No details available'
     });
   }
 }
