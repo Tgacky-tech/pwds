@@ -64,18 +64,15 @@ export default async function handler(req: any, res: any) {
       "Content-Type": "application/json"
     };
     
-    // 利用可能なFLUXモデルを使用
+    // 高速なFLUXモデルを使用（schnellは最速）
     const data = {
-      version: "adirik/flux-cinestill:4bfafcc33e70765ce85c8f81ccf8ba8ad88e6731a7f18c30e15ed4e21f93a7b2",
+      version: "black-forest-labs/flux-schnell",
       input: {
         prompt: enhancedPrompt,
-        width: 1024,
-        height: 768,
         num_outputs: 1,
+        aspect_ratio: "16:9",
         output_format: "png",
-        output_quality: 80,
-        guidance_scale: 3.5,
-        num_inference_steps: 25
+        output_quality: 80
       }
     };
     
@@ -110,9 +107,9 @@ export default async function handler(req: any, res: any) {
     
     console.log('📝 予測ID:', predictionId);
     
-    // 生成完了まで待機（最大2分）
+    // 生成完了まで待機（最大4分）
     let attempts = 0;
-    const maxAttempts = 60; // 2分 (2秒 × 60回)
+    const maxAttempts = 120; // 4分 (2秒 × 120回)
     
     while (attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 2000)); // 2秒待機
