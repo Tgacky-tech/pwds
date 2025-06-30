@@ -34,7 +34,7 @@ export const predictDogGrowthWithGemini = async (formData: DogFormData): Promise
     
     return {
       predictedWeight: predictionData.predictedWeight,
-      imageUrl: generatedImageUrl || '/image.png', // FLUX.1生成画像、失敗時はフォールバック
+      imageUrl: generatedImageUrl || '/default-dog.svg', // FLUX.1生成画像、失敗時はフォールバック
       imagePrompt: imagePrompt, // 画像生成用プロンプト
       advice: {
         health: predictionData.healthAdvice,
