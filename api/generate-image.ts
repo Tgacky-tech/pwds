@@ -12,7 +12,7 @@ interface GenerateImageRequest {
   predictedWeight: number;
 }
 
-const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN || "dc_fa920707481072ba99eb280e2f3bd246f04be4e8ffce4c19b45c012fef9964b4149809b3d0ecacdf700de0d5332d25ac975a2851cfd1e23358f0be116c0d284e84e94efe35c30a9beb77f418f29b642917729872c48e05c4f5e65ae01ec4491948186e2bcbc8d1b58048c8086b24b6c4929ae5d9bd5a4e962cd13cbfafcd59f7";
+const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
 
 export default async function handler(req: any, res: any) {
   // CORS headers
@@ -66,13 +66,14 @@ export default async function handler(req: any, res: any) {
     
     // 高速なFLUXモデルを使用（schnellは最速）
     const data = {
-      version: "black-forest-labs/flux-schnell",
+      version: "c846a69991daf4c0e5d016514849d14ee5b2e6846ce6b9d6f21369e564cfe51e",
       input: {
         prompt: enhancedPrompt,
         num_outputs: 1,
         aspect_ratio: "16:9",
-        output_format: "png",
-        output_quality: 80
+        output_format: "webp",
+        num_inference_steps: 4,
+        go_fast: true
       }
     };
     
