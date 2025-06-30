@@ -64,20 +64,22 @@ export default async function handler(req: any, res: any) {
       "Content-Type": "application/json"
     };
     
+    // 利用可能なFLUXモデルを使用
     const data = {
-      version: "black-forest-labs/flux-1.1-pro",
+      version: "adirik/flux-cinestill:4bfafcc33e70765ce85c8f81ccf8ba8ad88e6731a7f18c30e15ed4e21f93a7b2",
       input: {
         prompt: enhancedPrompt,
         width: 1024,
         height: 768,
         num_outputs: 1,
-        guidance_scale: 3.5,
-        num_inference_steps: 28,
-        seed: null,
         output_format: "png",
-        output_quality: 80
+        output_quality: 80,
+        guidance_scale: 3.5,
+        num_inference_steps: 25
       }
     };
+    
+    console.log('🎯 送信データ:', JSON.stringify(data, null, 2));
     
     console.log('📤 FLUX.1 APIリクエスト送信...');
     
@@ -88,11 +90,18 @@ export default async function handler(req: any, res: any) {
       body: JSON.stringify(data)
     });
     
-    console.log('📥 レスポンスステータス:', response.status);
+    console.log('📥 レスポンスステータス:', response.status, response.statusText);
+    console.log('📥 レスポンスヘッダー:', Object.fromEntries(response.headers.entries()));
     
     if (!response.ok) {
       const errorText = await response.text();
       console.log('❌ API リクエスト失敗:', errorText);
+      console.log('❌ ステータス詳細:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url,
+        headers: Object.fromEntries(response.headers.entries())
+      });
       throw new Error(`API request failed: ${response.status} - ${errorText}`);
     }
     
