@@ -64,22 +64,6 @@ export default async function handler(req: any, res: any) {
       "Content-Type": "application/json"
     };
     
-    // まずはシンプルなテストを実行
-    return res.status(200).json({ 
-      imageUrl: 'https://replicate.delivery/pbxt/test-image.png',
-      message: 'Test mode - returning placeholder image',
-      debug: {
-        prompt: enhancedPrompt,
-        breed,
-        gender,
-        predictedWeight,
-        hasToken: !!REPLICATE_API_TOKEN,
-        tokenLength: REPLICATE_API_TOKEN ? REPLICATE_API_TOKEN.length : 0
-      }
-    });
-
-    // 実際のFLUX.1 APIコールはコメントアウト
-    /*
     const data = {
       version: "black-forest-labs/flux-1.1-pro",
       input: {
@@ -94,10 +78,7 @@ export default async function handler(req: any, res: any) {
         output_quality: 80
       }
     };
-    */
     
-    // この部分はコメントアウト中
-    /*
     console.log('📤 FLUX.1 APIリクエスト送信...');
     
     // 画像生成リクエスト
@@ -120,9 +101,9 @@ export default async function handler(req: any, res: any) {
     
     console.log('📝 予測ID:', predictionId);
     
-    // 生成完了まで待機（最大30秒でテスト）
+    // 生成完了まで待機（最大2分）
     let attempts = 0;
-    const maxAttempts = 15; // 30秒 (2秒 × 15回)
+    const maxAttempts = 60; // 2分 (2秒 × 60回)
     
     while (attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 2000)); // 2秒待機
@@ -159,7 +140,6 @@ export default async function handler(req: any, res: any) {
     
     console.error('⏰ FLUX.1 画像生成タイムアウト');
     return res.status(408).json({ error: 'Image generation timeout' });
-    */
     
   } catch (error) {
     console.error('❌ FLUX.1 画像生成エラー:', error);
