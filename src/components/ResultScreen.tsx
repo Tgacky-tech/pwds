@@ -148,8 +148,20 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
                 <div className="text-sm text-gray-600 space-y-1">
                   <div><strong>画像URL:</strong> {result.imageUrl}</div>
                   <div><strong>有効性:</strong> {result.imageUrl ? '✅' : '❌'}</div>
-                  <div><strong>URLタイプ:</strong> {result.imageUrl?.startsWith('http') ? 'HTTP' : 'その他'}</div>
+                  <div><strong>URLタイプ:</strong> {
+                    result.imageUrl?.startsWith('http') ? 'HTTP' : 
+                    result.imageUrl?.startsWith('data:') ? 'Base64' : 
+                    'その他'
+                  }</div>
+                  <div><strong>URL長:</strong> {result.imageUrl?.length || 0} 文字</div>
+                  <div><strong>実際の画像:</strong> {result.imageUrl?.includes('replicate') ? 'FLUX.1生成' : 'フォールバック'}</div>
                 </div>
+                <details className="mt-2">
+                  <summary className="cursor-pointer text-blue-600">詳細情報を表示</summary>
+                  <div className="mt-2 text-xs text-gray-500 break-all max-h-20 overflow-y-auto">
+                    {result.imageUrl}
+                  </div>
+                </details>
               </div>
             </div>
 

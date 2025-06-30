@@ -23,6 +23,7 @@ export const generateDogImage = async ({
     console.log('🚀 実際のFLUX.1 API呼び出し開始...');
     
     try {
+      console.log('📡 API リクエスト送信中...');
       const response = await fetch('/api/generate-image', {
         method: 'POST',
         headers: {
@@ -36,13 +37,20 @@ export const generateDogImage = async ({
         })
       });
       
+      console.log('📥 API レスポンス受信:', response.status, response.statusText);
+      
       if (response.ok) {
         const result: ApiResponse = await response.json();
         
         if (result.imageUrl) {
           console.log('✅ FLUX.1 画像生成完了:', result.imageUrl);
           return result.imageUrl;
+        } else {
+          console.log('⚠️ API成功だが画像URLなし:', result);
         }
+      } else {
+        const errorText = await response.text();
+        console.log('❌ API レスポンスエラー:', response.status, errorText);
       }
       
       console.log('⚠️ FLUX.1 API失敗、フォールバック画像を使用');
