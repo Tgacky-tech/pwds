@@ -49,66 +49,124 @@ export const predictDogGrowthWithGemini = async (formData: DogFormData): Promise
   }
 };
 
-// メインの予測データ生成
+// メインの予測データ生成（レート制限対応）
 async function generatePredictionData(formData: DogFormData) {
   const prompt = createPredictionPrompt(formData);
   
-  const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      contents: [{
-        parts: [{ text: prompt }]
-      }],
-      generationConfig: {
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 2048,
+  // レート制限対応: 最大3回のリトライを実行
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      console.log(`🔄 Gemini API呼び出し（試行${attempt}/3）`);
+      
+      const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: prompt }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 2048,
+          }
+        })
+      });
+
+      if (response.status === 429) {
+        // レート制限の場合は指数バックオフで待機
+        const waitTime = Math.pow(2, attempt) * 1000; // 2秒, 4秒, 8秒
+        console.log(`⏳ レート制限エラー。${waitTime/1000}秒待機後にリトライ...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        continue;
       }
-    })
-  });
 
-  if (!response.ok) {
-    throw new Error(`Gemini API request failed: ${response.statusText}`);
+      if (!response.ok) {
+        throw new Error(`Gemini API request failed: ${response.status} ${response.statusText}`);
+      }
+
+      const data: GeminiResponse = await response.json();
+      const result = data.candidates[0].content.parts[0].text;
+      
+      console.log('✅ Gemini API呼び出し成功');
+      return parseGeminiResponse(result);
+      
+    } catch (error) {
+      console.error(`❌ Gemini API試行${attempt}失敗:`, error);
+      
+      if (attempt === 3) {
+        throw error; // 最後の試行で失敗した場合はエラーを投げる
+      }
+      
+      // 次の試行前に少し待機
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
   }
-
-  const data: GeminiResponse = await response.json();
-  const result = data.candidates[0].content.parts[0].text;
-  
-  return parseGeminiResponse(result);
 }
 
-// 画像生成用プロンプト生成
+// 画像生成用プロンプト生成（レート制限対応）
 async function generateImagePrompt(formData: DogFormData, predictedWeight: number): Promise<string> {
   const prompt = createImagePromptGenerationPrompt(formData, predictedWeight);
   
-  const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      contents: [{
-        parts: [{ text: prompt }]
-      }],
-      generationConfig: {
-        temperature: 0.8,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 512,
+  // レート制限対応: 最大3回のリトライを実行
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      console.log(`🎨 画像プロンプト生成（試行${attempt}/3）`);
+      
+      // 前のAPI呼び出しから1秒待機してレート制限を回避
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: prompt }]
+          }],
+          generationConfig: {
+            temperature: 0.8,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 512,
+          }
+        })
+      });
+
+      if (response.status === 429) {
+        const waitTime = Math.pow(2, attempt) * 1000;
+        console.log(`⏳ レート制限エラー。${waitTime/1000}秒待機後にリトライ...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        continue;
       }
-    })
-  });
 
-  if (!response.ok) {
-    throw new Error(`Image prompt generation failed: ${response.statusText}`);
+      if (!response.ok) {
+        throw new Error(`Image prompt generation failed: ${response.status} ${response.statusText}`);
+      }
+
+      const data: GeminiResponse = await response.json();
+      console.log('✅ 画像プロンプト生成成功');
+      return data.candidates[0].content.parts[0].text.trim();
+      
+    } catch (error) {
+      console.error(`❌ 画像プロンプト生成試行${attempt}失敗:`, error);
+      
+      if (attempt === 3) {
+        // 最後の試行で失敗した場合はフォールバックプロンプトを返す
+        console.log('⚠️ フォールバック画像プロンプトを使用');
+        return `A realistic photo of an adult ${formData.gender === 'male' ? 'male' : 'female'} ${formData.breed} dog weighing approximately ${predictedWeight}kg, full body shot, high quality, professional photography.`;
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
   }
-
-  const data: GeminiResponse = await response.json();
-  return data.candidates[0].content.parts[0].text.trim();
+  
+  // この行は実際には到達しないが、TypeScriptの型チェック用
+  return `A realistic photo of an adult ${formData.gender === 'male' ? 'male' : 'female'} ${formData.breed} dog weighing approximately ${predictedWeight}kg, full body shot, high quality, professional photography.`;
 }
 
 // 予測プロンプト作成
