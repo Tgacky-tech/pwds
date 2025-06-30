@@ -113,6 +113,13 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
                   src={result.imageUrl}
                   alt="成犬時の予測画像"
                   className="w-full max-w-sm h-64 object-cover rounded-xl shadow-lg"
+                  onLoad={() => console.log('✅ 画像読み込み成功:', result.imageUrl)}
+                  onError={(e) => {
+                    console.error('❌ 画像読み込み失敗:', result.imageUrl);
+                    console.error('エラー詳細:', e);
+                    // フォールバック画像を設定
+                    (e.target as HTMLImageElement).src = '/default-dog.svg';
+                  }}
                 />
                 <div className="absolute bottom-4 left-4 right-4">
                   <div className="bg-black bg-opacity-70 text-white px-3 py-2 rounded-lg">
@@ -132,6 +139,16 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
                       <div className="absolute -top-1 right-0 w-0.5 h-4 bg-white"></div>
                     </div>
                   </div>
+                </div>
+              </div>
+              
+              {/* デバッグ情報 */}
+              <div className="mt-4 p-4 bg-gray-100 rounded-lg text-left">
+                <h4 className="font-semibold text-gray-800 mb-2">🔍 画像デバッグ情報:</h4>
+                <div className="text-sm text-gray-600 space-y-1">
+                  <div><strong>画像URL:</strong> {result.imageUrl}</div>
+                  <div><strong>有効性:</strong> {result.imageUrl ? '✅' : '❌'}</div>
+                  <div><strong>URLタイプ:</strong> {result.imageUrl?.startsWith('http') ? 'HTTP' : 'その他'}</div>
                 </div>
               </div>
             </div>
