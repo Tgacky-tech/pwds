@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { Camera, Search } from 'lucide-react';
+import { Camera } from 'lucide-react';
 import { DogData } from '../types';
-import { dogBreeds } from '../data/dogBreeds';
+import SearchableDropdown from './SearchableDropdown';
 
 interface InputFormProps {
   onSubmit: (data: DogData) => void;
@@ -11,29 +11,11 @@ interface InputFormProps {
 const InputForm: React.FC<InputFormProps> = ({ onSubmit, isProcessing }) => {
   const [formData, setFormData] = useState<Partial<DogData>>({});
   const [breedInput, setBreedInput] = useState('');
-  const [showBreedSuggestions, setShowBreedSuggestions] = useState(false);
   const [birthDate, setBirthDate] = useState('');
   const [currentWeight, setCurrentWeight] = useState('');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 頭文字検索機能（ひらがな・カタカナ対応）
-  const normalizeText = (text: string) => {
-    return text
-      .replace(/[ぁ-ん]/g, (match) => String.fromCharCode(match.charCodeAt(0) + 0x60))
-      .toLowerCase();
-  };
-
-  const filteredBreeds = dogBreeds.filter(breed => {
-    if (!breedInput.trim()) return false;
-    
-    const normalizedBreed = normalizeText(breed.name);
-    const normalizedInput = normalizeText(breedInput);
-    
-    // 頭文字検索：入力文字で始まる犬種のみを表示
-    return normalizedBreed.startsWith(normalizedInput) || 
-           breed.name.toLowerCase().startsWith(breedInput.toLowerCase());
-  });
 
   const calculateAgeInMonths = (birthDate: string) => {
     const birth = new Date(birthDate);
@@ -76,10 +58,6 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit, isProcessing }) => {
     }
   };
 
-  const selectBreed = (breed: string) => {
-    setBreedInput(breed);
-    setShowBreedSuggestions(false);
-  };
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -89,38 +67,12 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit, isProcessing }) => {
       
       <form onSubmit={handleSubmit} className="p-6 space-y-6">
         {/* 犬種入力 */}
-        <div className="relative">
-          <div className="relative">
-            <input
-              type="text"
-              value={breedInput}
-              onChange={(e) => {
-                setBreedInput(e.target.value);
-                setShowBreedSuggestions(true);
-              }}
-              onFocus={() => setShowBreedSuggestions(true)}
-              onBlur={() => setTimeout(() => setShowBreedSuggestions(false), 200)}
-              placeholder="▼プルダウン選択"
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-            />
-            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-          </div>
-          
-          {showBreedSuggestions && breedInput && filteredBreeds.length > 0 && (
-            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-              {filteredBreeds.slice(0, 10).map((breed) => (
-                <button
-                  key={breed.id}
-                  type="button"
-                  onClick={() => selectBreed(breed.name)}
-                  className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 text-sm"
-                >
-                  {breed.name}
-                </button>
-              ))}
-            </div>
-          )}
+        <div>
+          <SearchableDropdown
+            value={breedInput}
+            onChange={setBreedInput}
+            placeholder="犬種を検索または選択してください"
+          />
         </div>
 
         {/* 性別 */}
@@ -129,7 +81,7 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit, isProcessing }) => {
           <div className="flex space-x-3">
             <button
               type="button"
-              onClick={() => setFormData(prev => ({ ...prev, gender: 'male' }))}
+              onClick={() => setFormData((prev: Partial<DogData>) => ({ ...prev, gender: 'male' }))}
               className={`flex-1 py-3 px-4 rounded-lg border-2 font-medium transition-all ${
                 formData.gender === 'male'
                   ? 'border-blue-500 bg-blue-50 text-blue-700'
@@ -140,7 +92,7 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit, isProcessing }) => {
             </button>
             <button
               type="button"
-              onClick={() => setFormData(prev => ({ ...prev, gender: 'female' }))}
+              onClick={() => setFormData((prev: Partial<DogData>) => ({ ...prev, gender: 'female' }))}
               className={`flex-1 py-3 px-4 rounded-lg border-2 font-medium transition-all ${
                 formData.gender === 'female'
                   ? 'border-pink-500 bg-pink-50 text-pink-700'
