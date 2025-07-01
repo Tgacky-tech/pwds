@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { DogFormData, FormErrors } from '../types';
-import { dogBreeds } from '../data/dogBreeds';
+import { DOG_BREEDS } from '../data/dogBreeds';
 import { validateForm, hasErrors } from '../utils/validation';
 import { Camera, ChevronDown, ChevronUp, AlertCircle, Plus, X } from 'lucide-react';
 
@@ -30,8 +30,8 @@ const FormScreen: React.FC<FormScreenProps> = ({ onSubmit }) => {
   const [breedSearch, setBreedSearch] = useState('');
   const [showBreedDropdown, setShowBreedDropdown] = useState(false);
 
-  const filteredBreeds = dogBreeds.filter(breed =>
-    breed.name.toLowerCase().includes(breedSearch.toLowerCase())
+  const filteredBreeds = DOG_BREEDS.filter(breed =>
+    breed.toLowerCase().includes(breedSearch.toLowerCase())
   );
 
   const handleInputChange = (field: keyof DogFormData, value: any) => {
@@ -199,18 +199,18 @@ const FormScreen: React.FC<FormScreenProps> = ({ onSubmit }) => {
                 />
                 {showBreedDropdown && filteredBreeds.length > 0 && (
                   <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                    {filteredBreeds.map(breed => (
+                    {filteredBreeds.map((breed, index) => (
                       <button
-                        key={breed.id}
+                        key={index}
                         type="button"
                         onClick={() => {
-                          setBreedSearch(breed.name);
-                          handleInputChange('breed', breed.name);
+                          setBreedSearch(breed);
+                          handleInputChange('breed', breed);
                           setShowBreedDropdown(false);
                         }}
                         className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
                       >
-                        {breed.name}
+                        {breed}
                       </button>
                     ))}
                   </div>
