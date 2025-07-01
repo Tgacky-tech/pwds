@@ -47,8 +47,10 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
     setSearchTerm(newValue);
     onChange(newValue);
     
-    if (!isOpen) {
+    if (newValue.trim() && !isOpen) {
       setIsOpen(true);
+    } else if (!newValue.trim()) {
+      setIsOpen(false);
     }
   };
 
@@ -59,9 +61,7 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
   };
 
   const handleInputFocus = () => {
-    if (searchTerm.trim()) {
-      setIsOpen(true);
-    }
+    // フォーカス時は何もしない（入力があった時のみドロップダウンを開く）
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
