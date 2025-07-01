@@ -231,8 +231,6 @@ export const DOG_BREEDS = [
 
 // 検索機能
 export const filterBreeds = (searchTerm: string): string[] => {
-  if (!searchTerm.trim()) return [];
-  
   return DOG_BREEDS.filter(breed => 
     breed.toLowerCase().includes(searchTerm.toLowerCase())
   );

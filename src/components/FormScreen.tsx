@@ -30,11 +30,9 @@ const FormScreen: React.FC<FormScreenProps> = ({ onSubmit }) => {
   const [breedSearch, setBreedSearch] = useState('');
   const [showBreedDropdown, setShowBreedDropdown] = useState(false);
 
-  const filteredBreeds = breedSearch.trim() 
-    ? dogBreeds.filter(breed =>
-        breed.name.toLowerCase().includes(breedSearch.toLowerCase())
-      )
-    : [];
+  const filteredBreeds = dogBreeds.filter(breed =>
+    breed.name.toLowerCase().includes(breedSearch.toLowerCase())
+  );
 
   const handleInputChange = (field: keyof DogFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -190,19 +188,10 @@ const FormScreen: React.FC<FormScreenProps> = ({ onSubmit }) => {
                   type="text"
                   value={breedSearch}
                   onChange={(e) => {
-                    const value = e.target.value;
-                    setBreedSearch(value);
-                    if (value.trim()) {
-                      setShowBreedDropdown(true);
-                    } else {
-                      setShowBreedDropdown(false);
-                    }
+                    setBreedSearch(e.target.value);
+                    setShowBreedDropdown(true);
                   }}
-                  onFocus={() => {
-                    if (breedSearch.trim()) {
-                      setShowBreedDropdown(true);
-                    }
-                  }}
+                  onFocus={() => setShowBreedDropdown(true)}
                   placeholder="犬種を入力または選択"
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                     errors.breed ? 'border-red-500' : 'border-gray-300'
