@@ -144,13 +144,37 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
               
             </div>
 
-            {/* Predicted Weight */}
-            <div className="text-center bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-6">
-              <div className="text-3xl font-bold text-gray-800 mb-2">
-                予測体重: {result.predictedWeight} kg
-              </div>
-              <div className="text-sm text-gray-600">
-                現在の体重 {formData.currentWeight}kg から予測
+            {/* Predicted Measurements */}
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-6">
+              <h3 className="text-xl font-bold text-gray-800 mb-4 text-center">成犬時の予測サイズ</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-amber-600 mb-1">
+                    {result.predictedWeight} kg
+                  </div>
+                  <div className="text-sm text-gray-600">体重</div>
+                  <div className="text-xs text-gray-500">
+                    現在: {formData.currentWeight}kg
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-amber-600 mb-1">
+                    {result.predictedLength} cm
+                  </div>
+                  <div className="text-sm text-gray-600">体長</div>
+                  <div className="text-xs text-gray-500">
+                    鼻先〜尻尾付け根
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-amber-600 mb-1">
+                    {result.predictedHeight} cm
+                  </div>
+                  <div className="text-sm text-gray-600">体高</div>
+                  <div className="text-xs text-gray-500">
+                    地面〜肩甲骨最高点
+                  </div>
+                </div>
               </div>
             </div>
 

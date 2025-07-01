@@ -34,6 +34,8 @@ export const predictDogGrowthWithGemini = async (formData: DogFormData): Promise
     
     return {
       predictedWeight: predictionData.predictedWeight,
+      predictedLength: predictionData.predictedLength,
+      predictedHeight: predictionData.predictedHeight,
       imageUrl: generatedImageUrl || '/default-dog.svg', // FLUX.1生成画像、失敗時はフォールバック
       imagePrompt: imagePrompt, // 画像生成用プロンプト
       advice: {
@@ -196,14 +198,17 @@ ${formData.pastWeights && formData.pastWeights.length > 0 ?
 JSON形式で以下の情報を提供してください：
 
 {
-  "predictedWeight": [成犬時の予測体重（数値）],
+  "predictedWeight": [成犬時の予測体重（数値・kg）],
+  "predictedLength": [成犬時の予測体長（数値・cm）],
+  "predictedHeight": [成犬時の予測体高（数値・cm）],
   "healthAdvice": "[健康管理に関する具体的なアドバイス（200-300文字）]",
   "trainingAdvice": "[しつけに関する具体的なアドバイス（200-300文字）]",
   "costAdvice": "[費用に関する追加アドバイス（100-150文字）]"
 }
 
 ## 注意事項
-- 予測体重は犬種、現在の体重、月齢、両親の体重を考慮して計算してください
+- 予測体重・体長・体高は犬種、現在の体重、月齢、両親の体重を考慮して計算してください
+- 体長は鼻先から尻尾の付け根まで、体高は地面から肩甲骨最高点までの高さです
 - 健康アドバイスは犬種特有の疾患リスクを含めてください
 - しつけアドバイスは犬種の特性と現在の月齢に適したものにしてください
 - 費用アドバイスは犬種と予測体重に基づいた注意点を含めてください
@@ -290,6 +295,8 @@ function calculateWeightEvaluation(formData: DogFormData, predictedWeight: numbe
 // Geminiのレスポンスをパース
 function parseGeminiResponse(response: string): {
   predictedWeight: number;
+  predictedLength: number;
+  predictedHeight: number;
   healthAdvice: string;
   trainingAdvice: string;
   costAdvice: string;
@@ -304,6 +311,8 @@ function parseGeminiResponse(response: string): {
     
     return {
       predictedWeight: Number(parsed.predictedWeight) || 5.0,
+      predictedLength: Number(parsed.predictedLength) || 40.0,
+      predictedHeight: Number(parsed.predictedHeight) || 25.0,
       healthAdvice: parsed.healthAdvice || '健康管理について専門医にご相談ください。',
       trainingAdvice: parsed.trainingAdvice || 'しつけについては専門のトレーナーにご相談ください。',
       costAdvice: parsed.costAdvice || '費用については獣医師にご相談ください。'
@@ -313,6 +322,8 @@ function parseGeminiResponse(response: string): {
     // フォールバック値を返す
     return {
       predictedWeight: 5.0,
+      predictedLength: 40.0,
+      predictedHeight: 25.0,
       healthAdvice: '健康管理について専門医にご相談ください。レスポンスの解析に失敗しました。',
       trainingAdvice: 'しつけについては専門のトレーナーにご相談ください。レスポンスの解析に失敗しました。',
       costAdvice: '費用については獣医師にご相談ください。'

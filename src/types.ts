@@ -36,6 +36,8 @@ export interface WeightEvaluation {
 // API response types
 export interface PredictionResult {
   predictedWeight: number;
+  predictedLength: number; // 体長（cm）
+  predictedHeight: number; // 体高（cm）
   imageUrl: string;
   imagePrompt?: string; // 画像生成用プロンプト
   advice: {
