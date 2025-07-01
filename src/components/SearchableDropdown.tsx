@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
-import { DOG_BREEDS, filterBreeds } from '../data/dogBreeds';
+import { filterBreeds } from '../data/dogBreeds';
 
 interface SearchableDropdownProps {
   value: string;
@@ -59,9 +59,8 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
   };
 
   const handleInputFocus = () => {
-    setIsOpen(true);
-    if (!searchTerm) {
-      setFilteredBreeds(DOG_BREEDS.slice(0, 50));
+    if (searchTerm.trim()) {
+      setIsOpen(true);
     }
   };
 
@@ -100,7 +99,7 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
         <p className="mt-1 text-sm text-red-600">{error}</p>
       )}
 
-      {isOpen && (
+      {isOpen && searchTerm.trim() && (
         <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {filteredBreeds.length > 0 ? (
             <ul className="py-1">
