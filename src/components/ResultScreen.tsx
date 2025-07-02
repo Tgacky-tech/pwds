@@ -178,6 +178,49 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
               </div>
             </div>
 
+            {/* Satisfaction Survey */}
+            <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-6">
+              <h4 className="font-semibold text-gray-800 mb-4 text-center">この結果に満足頂けましたか？</h4>
+              <div className="flex justify-center space-x-4">
+                <button 
+                  onClick={() => handleSatisfactionClick('yes')}
+                  className={`px-6 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2 ${
+                    satisfactionRating === 'yes' 
+                      ? 'bg-green-600 text-white shadow-lg' 
+                      : 'bg-green-500 hover:bg-green-600 text-white'
+                  }`}
+                  disabled={satisfactionRating !== null}
+                >
+                  <span>👍</span>
+                  <span>はい</span>
+                </button>
+                <button 
+                  onClick={() => handleSatisfactionClick('no')}
+                  className={`px-6 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2 ${
+                    satisfactionRating === 'no' 
+                      ? 'bg-red-600 text-white shadow-lg' 
+                      : 'bg-red-500 hover:bg-red-600 text-white'
+                  }`}
+                  disabled={satisfactionRating !== null}
+                >
+                  <span>👎</span>
+                  <span>いいえ</span>
+                </button>
+              </div>
+              {satisfactionRating && (
+                <div className="mt-4 text-center">
+                  <p className={`text-sm font-medium ${
+                    satisfactionRating === 'yes' ? 'text-green-700' : 'text-red-700'
+                  }`}>
+                    {satisfactionRating === 'yes' 
+                      ? '✅ ありがとうございます！フィードバックを保存しました。' 
+                      : '📝 フィードバックをありがとうございます。今後の改善に活用させていただきます。'
+                    }
+                  </p>
+                </div>
+              )}
+            </div>
+
             {/* Weight Evaluation Section */}
             <div className="border border-gray-200 rounded-xl overflow-hidden">
               <button
@@ -238,14 +281,15 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
                             <span className="text-sm text-gray-600">適正体重範囲：</span>
                             <span className="font-medium text-gray-800">
                               {(() => {
-                                const currentWeight = Number(formData.currentWeight);
-                                if (currentWeight) {
-                                  const min = Math.max(0.1, currentWeight * 0.8);
-                                  const max = currentWeight * 1.2;
-                                  return `${min.toFixed(1)}〜${max.toFixed(1)}kg`;
-                                }
-                                return '計算中...';
+                                const range = result.weightEvaluation.appropriateWeightRange;
+                                return `${range.min.toFixed(1)}〜${range.max.toFixed(1)}kg`;
                               })()}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                            <span className="text-sm text-gray-600">理想体重：</span>
+                            <span className="font-medium text-gray-800">
+                              {result.weightEvaluation.appropriateWeightRange.ideal.toFixed(1)}kg
                             </span>
                           </div>
                         </div>
@@ -290,48 +334,6 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
                       </div>
                     </div>
 
-                    {/* Satisfaction Survey */}
-                    <div className="bg-gray-50 rounded-lg p-4 border-t border-gray-200">
-                      <h4 className="font-semibold text-gray-800 mb-4 text-center">この結果に満足頂けましたか？</h4>
-                      <div className="flex justify-center space-x-4">
-                        <button 
-                          onClick={() => handleSatisfactionClick('yes')}
-                          className={`px-6 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2 ${
-                            satisfactionRating === 'yes' 
-                              ? 'bg-green-600 text-white shadow-lg' 
-                              : 'bg-green-500 hover:bg-green-600 text-white'
-                          }`}
-                          disabled={satisfactionRating !== null}
-                        >
-                          <span>👍</span>
-                          <span>はい</span>
-                        </button>
-                        <button 
-                          onClick={() => handleSatisfactionClick('no')}
-                          className={`px-6 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2 ${
-                            satisfactionRating === 'no' 
-                              ? 'bg-red-600 text-white shadow-lg' 
-                              : 'bg-red-500 hover:bg-red-600 text-white'
-                          }`}
-                          disabled={satisfactionRating !== null}
-                        >
-                          <span>👎</span>
-                          <span>いいえ</span>
-                        </button>
-                      </div>
-                      {satisfactionRating && (
-                        <div className="mt-4 text-center">
-                          <p className={`text-sm font-medium ${
-                            satisfactionRating === 'yes' ? 'text-green-700' : 'text-red-700'
-                          }`}>
-                            {satisfactionRating === 'yes' 
-                              ? '✅ ありがとうございます！フィードバックを保存しました。' 
-                              : '📝 フィードバックをありがとうございます。今後の改善に活用させていただきます。'
-                            }
-                          </p>
-                        </div>
-                      )}
-                    </div>
 
                   </div>
                 </div>
