@@ -1,7 +1,8 @@
-interface FluxApiResponse {
-  id: string;
-  status: 'starting' | 'processing' | 'succeeded' | 'failed' | 'canceled';
-  output?: string[];
+interface DataCrunchResponse {
+  output: {
+    images?: string[];
+    message?: string;
+  };
   error?: string;
 }
 
@@ -12,7 +13,7 @@ interface GenerateImageRequest {
   predictedWeight: number;
 }
 
-const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
+const DATACRUNCH_API_KEY = process.env.DATACRUNCH_API_KEY;
 
 export default async function handler(req: any, res: any) {
   // CORS headers
@@ -40,7 +41,7 @@ export default async function handler(req: any, res: any) {
     console.log('📝 リクエストボディ:', req.body);
     console.log('🌍 環境:', { 
       nodeEnv: process.env.NODE_ENV,
-      hasToken: !!process.env.REPLICATE_API_TOKEN,
+      hasDataCrunchKey: !!process.env.DATACRUNCH_API_KEY,
       platform: process.platform 
     });
     
@@ -51,44 +52,45 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
 
-    if (!REPLICATE_API_TOKEN) {
-      console.log('❌ APIトークンが設定されていません');
-      return res.status(500).json({ error: 'REPLICATE_API_TOKEN not configured' });
+    if (!DATACRUNCH_API_KEY) {
+      console.log('❌ APIキーが設定されていません');
+      return res.status(500).json({ error: 'DATACRUNCH_API_KEY not configured' });
     }
 
-    // APIトークンの形式確認
-    console.log('🔑 APIトークン確認:', REPLICATE_API_TOKEN ? `${REPLICATE_API_TOKEN.substring(0, 8)}...` : 'なし');
+    // APIキーの形式確認
+    console.log('🔑 APIキー確認:', DATACRUNCH_API_KEY ? `${DATACRUNCH_API_KEY.substring(0, 8)}...` : 'なし');
 
     // 性別の英語変換
     const genderEn = gender === "オス" ? "male" : "female";
     
     // より詳細なプロンプト作成（人とのサイズ比較を含む）
-    const enhancedPrompt = `A realistic photo of an adult ${genderEn} ${breed} dog weighing approximately ${predictedWeight}kg standing next to a person for size comparison, full body shot, high quality, professional photography. ${prompt}`;
+    const enhancedPrompt = `A realistic photo of an adult ${genderEn} ${breed} dog weighing approximately ${predictedWeight}kg, full body shot, high quality, professional photography. ${prompt}`;
     
-    console.log('🎨 FLUX.1 画像生成開始:', { breed, gender, predictedWeight });
+    console.log('🎨 FLUX Kontext 画像生成開始:', { breed, gender, predictedWeight });
     
     const headers = {
-      "Authorization": `Bearer ${REPLICATE_API_TOKEN}`,
+      "Authorization": `Bearer ${DATACRUNCH_API_KEY}`,
       "Content-Type": "application/json"
     };
     
-    // 高速なFLUXモデルを使用（schnellは最速）
+    // DataCrunch FLUX Kontext API用のデータ
     const data = {
-      version: "c846a69991daf4c0e5d016514849d14ee5b2e6846ce6b9d6f21369e564cfe51e",
       input: {
         prompt: enhancedPrompt,
-        num_outputs: 1,
-        aspect_ratio: "16:9",
-        go_fast: true
+        size: "1024*1024",
+        num_inference_steps: 28,
+        guidance_scale: 3.5,
+        num_images: 1,
+        enable_base64_output: false
       }
     };
     
     console.log('🎯 送信データ:', JSON.stringify(data, null, 2));
     
-    console.log('📤 FLUX.1 APIリクエスト送信...');
+    console.log('📤 FLUX Kontext APIリクエスト送信...');
     
     // 画像生成リクエスト
-    const response = await fetch("https://api.replicate.com/v1/predictions", {
+    const response = await fetch("https://inference.datacrunch.io/flux-kontext-dev/predict", {
       method: "POST",
       headers,
       body: JSON.stringify(data)
@@ -112,7 +114,7 @@ export default async function handler(req: any, res: any) {
         const errorObj = JSON.parse(errorText);
         console.log('❌ エラーオブジェクト:', errorObj);
         return res.status(response.status).json({ 
-          error: `Replicate API Error: ${errorObj.detail || errorObj.message || errorText}`,
+          error: `DataCrunch API Error: ${errorObj.detail || errorObj.message || errorText}`,
           status: response.status
         });
       } catch (parseError) {
@@ -124,53 +126,25 @@ export default async function handler(req: any, res: any) {
       }
     }
     
-    const prediction = await response.json() as FluxApiResponse;
-    const predictionId = prediction.id;
+    const result = await response.json() as DataCrunchResponse;
     
-    console.log('📝 予測ID:', predictionId);
+    console.log('📝 レスポンス結果:', result);
     
-    // 生成完了まで待機（最大4分）
-    let attempts = 0;
-    const maxAttempts = 120; // 4分 (2秒 × 120回)
-    
-    while (attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 2000)); // 2秒待機
-      
-      const statusResponse = await fetch(
-        `https://api.replicate.com/v1/predictions/${predictionId}`,
-        { headers }
-      );
-      
-      if (!statusResponse.ok) {
-        throw new Error(`Status check failed: ${statusResponse.status}`);
-      }
-      
-      const result = await statusResponse.json() as FluxApiResponse;
-      
-      console.log(`🔄 生成状況 (${attempts + 1}/${maxAttempts}):`, result.status);
-      
-      if (result.status === "succeeded") {
-        const imageUrl = result.output?.[0];
-        if (imageUrl) {
-          console.log('✅ FLUX.1 画像生成完了:', imageUrl);
-          return res.status(200).json({ imageUrl });
-        } else {
-          console.error('❌ 出力が空です:', result);
-          return res.status(500).json({ error: 'Empty output from FLUX.1' });
-        }
-      } else if (result.status === "failed") {
-        console.error('❌ FLUX.1 画像生成失敗:', result.error);
-        return res.status(500).json({ error: result.error || 'Image generation failed' });
-      }
-      
-      attempts++;
+    // DataCrunch APIは即座に結果を返すため、非同期処理は不要
+    if (result.output?.images && result.output.images.length > 0) {
+      const imageUrl = result.output.images[0];
+      console.log('✅ FLUX Kontext 画像生成完了:', imageUrl);
+      return res.status(200).json({ imageUrl });
+    } else if (result.error) {
+      console.error('❌ FLUX Kontext 画像生成失敗:', result.error);
+      return res.status(500).json({ error: result.error });
+    } else {
+      console.error('❌ 予期しない応答形式:', result);
+      return res.status(500).json({ error: 'Unexpected response format from FLUX Kontext' });
     }
     
-    console.error('⏰ FLUX.1 画像生成タイムアウト');
-    return res.status(408).json({ error: 'Image generation timeout' });
-    
   } catch (error) {
-    console.error('❌ FLUX.1 画像生成エラー:', error);
+    console.error('❌ FLUX Kontext 画像生成エラー:', error);
     console.error('エラースタック:', error instanceof Error ? error.stack : 'No stack trace');
     return res.status(500).json({ 
       error: error instanceof Error ? error.message : 'Unknown error occurred',
