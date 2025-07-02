@@ -38,6 +38,11 @@ export default async function handler(req: any, res: any) {
   try {
     console.log('🚀 API呼び出し開始');
     console.log('📝 リクエストボディ:', req.body);
+    console.log('🌍 環境:', { 
+      nodeEnv: process.env.NODE_ENV,
+      hasToken: !!process.env.REPLICATE_API_TOKEN,
+      platform: process.platform 
+    });
     
     const { prompt, breed, gender, predictedWeight }: GenerateImageRequest = req.body;
 
@@ -51,6 +56,9 @@ export default async function handler(req: any, res: any) {
       return res.status(500).json({ error: 'REPLICATE_API_TOKEN not configured' });
     }
 
+    // APIトークンの形式確認
+    console.log('🔑 APIトークン確認:', REPLICATE_API_TOKEN ? `${REPLICATE_API_TOKEN.substring(0, 8)}...` : 'なし');
+
     // 性別の英語変換
     const genderEn = gender === "オス" ? "male" : "female";
     
@@ -60,7 +68,7 @@ export default async function handler(req: any, res: any) {
     console.log('🎨 FLUX.1 画像生成開始:', { breed, gender, predictedWeight });
     
     const headers = {
-      "Authorization": `Token ${REPLICATE_API_TOKEN}`,
+      "Authorization": `Bearer ${REPLICATE_API_TOKEN}`,
       "Content-Type": "application/json"
     };
     
@@ -71,8 +79,6 @@ export default async function handler(req: any, res: any) {
         prompt: enhancedPrompt,
         num_outputs: 1,
         aspect_ratio: "16:9",
-        output_format: "webp",
-        num_inference_steps: 4,
         go_fast: true
       }
     };
@@ -100,7 +106,22 @@ export default async function handler(req: any, res: any) {
         url: response.url,
         headers: Object.fromEntries(response.headers.entries())
       });
-      throw new Error(`API request failed: ${response.status} - ${errorText}`);
+      
+      // 具体的なエラーメッセージを解析
+      try {
+        const errorObj = JSON.parse(errorText);
+        console.log('❌ エラーオブジェクト:', errorObj);
+        return res.status(response.status).json({ 
+          error: `Replicate API Error: ${errorObj.detail || errorObj.message || errorText}`,
+          status: response.status
+        });
+      } catch (parseError) {
+        console.log('❌ エラーパース失敗:', parseError);
+        return res.status(response.status).json({ 
+          error: `API request failed: ${response.status} - ${errorText}`,
+          status: response.status
+        });
+      }
     }
     
     const prediction = await response.json() as FluxApiResponse;
