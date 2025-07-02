@@ -243,21 +243,21 @@ function createImagePromptGenerationPrompt(formData: DogFormData, predictedWeigh
 `;
 }
 
-// Gemini APIを使って適正体重範囲を取得
-async function getAppropriateWeightRange(formData: DogFormData): Promise<{min: number, max: number, ideal: number}> {
+// Gemini APIを使って適正体重を取得
+async function getAppropriateWeight(formData: DogFormData): Promise<number> {
   const birthDate = new Date(formData.birthDate);
   const today = new Date();
   const ageInDays = Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24));
   const ageInMonths = Math.floor(ageInDays / 30);
 
   const prompt = `
-あなたは経験豊富な獣医師です。以下の犬の情報に基づいて、現在の月齢における適正体重範囲を算出してください。
+あなたは経験豊富な獣医師です。以下の犬の情報に基づいて、現在の月齢における適正体重を算出してください。
 
 ## 犬の情報
 - 犬種: ${formData.breed || '不明'}
 - 性別: ${formData.gender === 'male' ? 'オス' : 'メス'}
+- 生まれてからの日数: ${ageInDays}日
 - 現在の月齢: ${ageInMonths}ヶ月
-- 現在の体重: ${formData.currentWeight}kg
 ${formData.motherAdultWeight ? `- 母親の成犬時体重: ${formData.motherAdultWeight}kg` : ''}
 ${formData.fatherAdultWeight ? `- 父親の成犬時体重: ${formData.fatherAdultWeight}kg` : ''}
 
@@ -265,16 +265,15 @@ ${formData.fatherAdultWeight ? `- 父親の成犬時体重: ${formData.fatherAdu
 JSON形式で以下の情報を提供してください：
 
 {
-  "minWeight": [現在の月齢における適正体重の最小値（数値・kg）],
-  "maxWeight": [現在の月齢における適正体重の最大値（数値・kg）],
-  "idealWeight": [現在の月齢における理想的な体重（数値・kg）]
+  "appropriateWeight": [現在の月齢における適正体重（数値・kg）]
 }
 
 ## 注意事項
 - 犬種の標準的な成長曲線を考慮してください
 - 性別による体格差を反映してください
-- 現在の月齢に適した体重範囲を算出してください
+- 生まれてからの日数と現在の月齢に適した体重を算出してください
 - 両親の体重情報がある場合は参考にしてください
+- 現在の体重は参考にせず、犬種・性別・月齢のみから適正体重を算出してください
 - 実数値のみを返してください（単位は含めない）
 `;
 
@@ -298,7 +297,7 @@ JSON形式で以下の情報を提供してください：
     });
 
     if (!response.ok) {
-      throw new Error(`Weight range API request failed: ${response.status}`);
+      throw new Error(`Appropriate weight API request failed: ${response.status}`);
     }
 
     const data: GeminiResponse = await response.json();
@@ -311,20 +310,15 @@ JSON形式で以下の情報を提供してください：
     
     const parsed = JSON.parse(jsonStr);
     
-    return {
-      min: Number(parsed.minWeight) || Number(formData.currentWeight) * 0.8,
-      max: Number(parsed.maxWeight) || Number(formData.currentWeight) * 1.2,
-      ideal: Number(parsed.idealWeight) || Number(formData.currentWeight)
-    };
+    return Number(parsed.appropriateWeight) || 2.0; // フォールバック値
   } catch (error) {
-    console.error('Failed to get appropriate weight range:', error);
-    // フォールバック: 現在体重ベースの簡易計算
-    const currentWeight = Number(formData.currentWeight);
-    return {
-      min: Math.max(0.1, currentWeight * 0.8),
-      max: currentWeight * 1.2,
-      ideal: currentWeight
-    };
+    console.error('Failed to get appropriate weight:', error);
+    // フォールバック: 犬種と月齢に基づく簡易計算
+    const ageInMonths = Math.floor(ageInDays / 30);
+    if (ageInMonths < 3) return 1.5;
+    if (ageInMonths < 6) return 3.0;
+    if (ageInMonths < 12) return 5.0;
+    return 8.0; // 成犬の平均的な体重
   }
 }
 
@@ -332,8 +326,8 @@ JSON形式で以下の情報を提供してください：
 async function calculateWeightEvaluation(formData: DogFormData, _predictedWeight: number): Promise<WeightEvaluation> {
   const currentWeight = Number(formData.currentWeight);
   
-  // Gemini APIから適正体重範囲を取得
-  const appropriateWeightRange = await getAppropriateWeightRange(formData);
+  // Gemini APIから適正体重を取得
+  const appropriateWeight = await getAppropriateWeight(formData);
   
   if (!currentWeight) {
     return {
@@ -341,55 +335,63 @@ async function calculateWeightEvaluation(formData: DogFormData, _predictedWeight
       grade: 'C',
       description: '適正範囲内',
       advice: '現在の体重は一般的な範囲内にあります。このまま成長を見守りましょう。',
-      appropriateWeightRange
+      appropriateWeight
     };
   }
 
-  // 現在体重と適正体重範囲を比較して評価
-  const { min, max, ideal } = appropriateWeightRange;
+  // 現在体重と適正体重を比較して評価
+  const weightRatio = currentWeight / appropriateWeight;
+  const deviationPercent = Math.abs(weightRatio - 1) * 100;
   
-  // 体重の偏差を計算
-  const deviationFromIdeal = Math.abs(currentWeight - ideal) / ideal;
-  const isUnderweight = currentWeight < min;
-  const isOverweight = currentWeight > max;
-  
-  // 範囲内での位置を計算（0=最小値、0.5=理想値、1=最大値）
-  // const positionInRange = (currentWeight - min) / (max - min);
-  
-  if (isUnderweight) {
-    const severity = currentWeight < min * 0.8 ? 'severe' : 'moderate';
+  // 体重評価の基準
+  if (weightRatio < 0.8) {
+    // 適正体重の80%未満
     return {
-      category: severity === 'severe' ? 'underweight' : 'slightly_underweight',
-      grade: severity === 'severe' ? 'E' : 'D',
-      description: severity === 'severe' ? '痩せすぎ' : 'やや痩せ',
-      advice: severity === 'severe' 
-        ? '体重が適正範囲を大きく下回っています。栄養状態や健康状態について至急獣医師にご相談ください。'
-        : '体重が適正範囲をやや下回っています。食事量の調整について獣医師にご相談ください。',
-      appropriateWeightRange
+      category: 'underweight',
+      grade: 'E',
+      description: '痩せすぎ',
+      advice: `適正体重(${appropriateWeight.toFixed(1)}kg)を大きく下回っています。栄養状態や健康状態について至急獣医師にご相談ください。`,
+      appropriateWeight
     };
-  } else if (isOverweight) {
-    const severity = currentWeight > max * 1.2 ? 'severe' : 'moderate';
+  } else if (weightRatio < 0.9) {
+    // 適正体重の80-90%
     return {
-      category: severity === 'severe' ? 'overweight' : 'slightly_overweight',
-      grade: severity === 'severe' ? 'E' : 'D',
-      description: severity === 'severe' ? '太りすぎ' : 'やや太り',
-      advice: severity === 'severe'
-        ? '体重が適正範囲を大きく上回っています。食事管理と運動について至急獣医師にご相談ください。'
-        : '体重が適正範囲をやや上回っています。食事量と運動量の調整について獣医師にご相談ください。',
-      appropriateWeightRange
+      category: 'slightly_underweight',
+      grade: 'D',
+      description: 'やや痩せ',
+      advice: `適正体重(${appropriateWeight.toFixed(1)}kg)をやや下回っています。食事量の調整について獣医師にご相談ください。`,
+      appropriateWeight
+    };
+  } else if (weightRatio > 1.2) {
+    // 適正体重の120%超
+    return {
+      category: 'overweight',
+      grade: 'E',
+      description: '太りすぎ',
+      advice: `適正体重(${appropriateWeight.toFixed(1)}kg)を大きく上回っています。食事管理と運動について至急獣医師にご相談ください。`,
+      appropriateWeight
+    };
+  } else if (weightRatio > 1.1) {
+    // 適正体重の110-120%
+    return {
+      category: 'slightly_overweight',
+      grade: 'D',
+      description: 'やや太り',
+      advice: `適正体重(${appropriateWeight.toFixed(1)}kg)をやや上回っています。食事量と運動量の調整について獣医師にご相談ください。`,
+      appropriateWeight
     };
   } else {
-    // 適正範囲内での詳細評価
-    const grade = deviationFromIdeal < 0.05 ? 'A' : deviationFromIdeal < 0.15 ? 'B' : 'C';
+    // 適正体重の90-110%（理想範囲）
+    const grade = deviationPercent < 5 ? 'A' : deviationPercent < 10 ? 'B' : 'C';
     
     return {
       category: 'ideal',
       grade,
       description: '適正範囲内',
       advice: grade === 'A' 
-        ? '体重は理想的な範囲にあります。現在の食事と運動を継続してください。'
-        : '体重は適正範囲内にあります。理想体重により近づけるため、食事と運動のバランスを見直してみてください。',
-      appropriateWeightRange
+        ? `体重は適正体重(${appropriateWeight.toFixed(1)}kg)に非常に近く理想的です。現在の食事と運動を継続してください。`
+        : `体重は適正体重(${appropriateWeight.toFixed(1)}kg)の範囲内にあります。より理想的な体重に近づけるため、食事と運動のバランスを見直してみてください。`,
+      appropriateWeight
     };
   }
 }
