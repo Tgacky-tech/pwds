@@ -350,7 +350,7 @@ async function calculateWeightEvaluation(formData: DogFormData, _predictedWeight
       category: 'underweight',
       grade: 'E',
       description: '痩せすぎ',
-      advice: `適正体重(${appropriateWeight.toFixed(1)}kg)を大きく下回っています。栄養状態や健康状態について至急獣医師にご相談ください。`,
+      advice: `適正体重(${appropriateWeight.toFixed(2)}kg)を大きく下回っています。栄養状態や健康状態について至急獣医師にご相談ください。`,
       appropriateWeight
     };
   } else if (weightRatio < 0.9) {
@@ -359,7 +359,7 @@ async function calculateWeightEvaluation(formData: DogFormData, _predictedWeight
       category: 'slightly_underweight',
       grade: 'D',
       description: 'やや痩せ',
-      advice: `適正体重(${appropriateWeight.toFixed(1)}kg)をやや下回っています。食事量の調整について獣医師にご相談ください。`,
+      advice: `適正体重(${appropriateWeight.toFixed(2)}kg)をやや下回っています。食事量の調整について獣医師にご相談ください。`,
       appropriateWeight
     };
   } else if (weightRatio > 1.2) {
@@ -368,7 +368,7 @@ async function calculateWeightEvaluation(formData: DogFormData, _predictedWeight
       category: 'overweight',
       grade: 'E',
       description: '太りすぎ',
-      advice: `適正体重(${appropriateWeight.toFixed(1)}kg)を大きく上回っています。食事管理と運動について至急獣医師にご相談ください。`,
+      advice: `適正体重(${appropriateWeight.toFixed(2)}kg)を大きく上回っています。食事管理と運動について至急獣医師にご相談ください。`,
       appropriateWeight
     };
   } else if (weightRatio > 1.1) {
@@ -377,7 +377,7 @@ async function calculateWeightEvaluation(formData: DogFormData, _predictedWeight
       category: 'slightly_overweight',
       grade: 'D',
       description: 'やや太り',
-      advice: `適正体重(${appropriateWeight.toFixed(1)}kg)をやや上回っています。食事量と運動量の調整について獣医師にご相談ください。`,
+      advice: `適正体重(${appropriateWeight.toFixed(2)}kg)をやや上回っています。食事量と運動量の調整について獣医師にご相談ください。`,
       appropriateWeight
     };
   } else {
@@ -389,8 +389,8 @@ async function calculateWeightEvaluation(formData: DogFormData, _predictedWeight
       grade,
       description: '適正範囲内',
       advice: grade === 'A' 
-        ? `体重は適正体重(${appropriateWeight.toFixed(1)}kg)に非常に近く理想的です。現在の食事と運動を継続してください。`
-        : `体重は適正体重(${appropriateWeight.toFixed(1)}kg)の範囲内にあります。より理想的な体重に近づけるため、食事と運動のバランスを見直してみてください。`,
+        ? `体重は適正体重(${appropriateWeight.toFixed(2)}kg)に非常に近く理想的です。現在の食事と運動を継続してください。`
+        : `体重は適正体重(${appropriateWeight.toFixed(2)}kg)の範囲内にあります。より理想的な体重に近づけるため、食事と運動のバランスを見直してみてください。`,
       appropriateWeight
     };
   }

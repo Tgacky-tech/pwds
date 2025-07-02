@@ -280,7 +280,7 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
                           <div className="flex justify-between items-center py-2 border-b border-gray-200">
                             <span className="text-sm text-gray-600">適正体重：</span>
                             <span className="font-medium text-gray-800">
-                              {result.weightEvaluation.appropriateWeight.toFixed(1)}kg
+                              {result.weightEvaluation.appropriateWeight.toFixed(2)}kg
                             </span>
                           </div>
                         </div>
