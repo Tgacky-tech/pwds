@@ -15,7 +15,7 @@ interface GenerateImageRequest {
 
 const DATACRUNCH_API_KEY = process.env.DATACRUNCH_API_KEY;
 
-module.exports = async function handler(req: any, res: any) {
+export default async function handler(req: any, res: any) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -153,5 +153,3 @@ module.exports = async function handler(req: any, res: any) {
   }
 };
 
-// デフォルトエクスポートも追加
-module.exports.default = module.exports;
