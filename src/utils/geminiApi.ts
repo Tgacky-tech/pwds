@@ -1,4 +1,4 @@
-import { DogFormData, PredictionResult, WeightEvaluation } from '../types';
+import { DogFormData, PredictionResult, WeightEvaluation, CostSimulation } from '../types';
 import { generateDogImage } from './fluxApi';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
@@ -36,6 +36,10 @@ export const predictDogGrowthWithGemini = async (formData: DogFormData): Promise
     console.log('📊 体重評価算出開始...');
     const weightEvaluation = await calculateWeightEvaluation(formData, predictionData.predictedWeight);
 
+    // 5. コストシミュレーションを生成
+    console.log('💰 コストシミュレーション算出開始...');
+    const costSimulation = await generateCostSimulation(formData, predictionData.predictedWeight);
+
     return {
       predictedWeight: predictionData.predictedWeight,
       predictedLength: predictionData.predictedLength,
@@ -47,7 +51,8 @@ export const predictDogGrowthWithGemini = async (formData: DogFormData): Promise
         training: predictionData.trainingAdvice,
         cost: predictionData.costAdvice
       },
-      weightEvaluation
+      weightEvaluation,
+      costSimulation
     };
   } catch (error) {
     console.error('Gemini API Error:', error);
@@ -395,6 +400,174 @@ async function calculateWeightEvaluation(formData: DogFormData, _predictedWeight
         ? `体重は適正体重範囲(${min.toFixed(2)}〜${max.toFixed(2)}kg)の理想的な範囲にあります。現在の食事と運動を継続してください。`
         : `体重は適正体重範囲(${min.toFixed(2)}〜${max.toFixed(2)}kg)内にあります。より理想的な体重に近づけるため、食事と運動のバランスを見直してみてください。`,
       appropriateWeightRange
+    };
+  }
+}
+
+// Gemini APIを使ってコストシミュレーションを生成
+async function generateCostSimulation(formData: DogFormData, predictedWeight: number): Promise<CostSimulation> {
+  const birthDate = new Date(formData.birthDate);
+  const today = new Date();
+  const ageInDays = Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24));
+  const ageInMonths = Math.floor(ageInDays / 30);
+
+  const prompt = `
+あなたは経験豊富な獣医師兼ペット用品専門家です。以下の犬の情報に基づいて、具体的で実用的な費用シミュレーションを作成してください。
+
+## 犬の情報
+- 犬種: ${formData.breed || '不明'}
+- 性別: ${formData.gender === 'male' ? 'オス' : 'メス'}
+- 現在の月齢: ${ageInMonths}ヶ月
+- 現在の体重: ${formData.currentWeight}kg
+- 予測成犬時体重: ${predictedWeight}kg
+
+## 出力形式（必ずこの形式で回答してください）
+JSON形式で以下の情報を提供してください：
+
+{
+  "categories": [
+    {
+      "id": "initial",
+      "title": "初期費用（お迎え時）",
+      "description": "犬を迎える際に必要な基本的な用品",
+      "icon": "1",
+      "items": [
+        {"name": "項目名", "cost": "¥XX,XXX - ¥XX,XXX"},
+        ...
+      ],
+      "total": "¥XX,XXX - ¥XX,XXX"
+    },
+    {
+      "id": "monthly",
+      "title": "毎月の費用",
+      "description": "継続的にかかる月額費用",
+      "icon": "2",
+      "items": [...],
+      "total": "¥XX,XXX - ¥XX,XXX"
+    },
+    {
+      "id": "health",
+      "title": "年間健康管理費用",
+      "description": "予防接種や健康診断など",
+      "icon": "3",
+      "items": [...],
+      "total": "¥XX,XXX - ¥XX,XXX"
+    },
+    {
+      "id": "medical",
+      "title": "医療費（不定期）",
+      "description": "病気や怪我の際の治療費",
+      "icon": "4",
+      "items": [...],
+      "total": "参考価格"
+    }
+  ]
+}
+
+## 注意事項
+- 犬種のサイズ（小型犬、中型犬、大型犬）に応じた費用を算出してください
+- 性別による違い（去勢・避妊手術費用など）を考慮してください
+- 現在の体重と予測体重から必要な用品サイズを判断してください
+- 日本の一般的な価格帯を参考にしてください
+- 各カテゴリに4-6個程度の具体的な項目を含めてください
+- 費用は幅を持たせて「¥X,XXX - ¥X,XXX」形式で表示してください
+- 実用的で参考になる内容にしてください
+`;
+
+  try {
+    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: prompt }]
+        }],
+        generationConfig: {
+          temperature: 0.3,
+          topK: 20,
+          topP: 0.8,
+          maxOutputTokens: 2048,
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Cost simulation API request failed: ${response.status}`);
+    }
+
+    const data: GeminiResponse = await response.json();
+    const result = data.candidates[0].content.parts[0].text;
+    
+    // JSONの開始と終了を見つけて抽出
+    const jsonStart = result.indexOf('{');
+    const jsonEnd = result.lastIndexOf('}') + 1;
+    const jsonStr = result.substring(jsonStart, jsonEnd);
+    
+    const parsed = JSON.parse(jsonStr);
+    
+    return parsed;
+  } catch (error) {
+    console.error('Failed to generate cost simulation:', error);
+    // フォールバック: デフォルトのコストシミュレーション
+    return {
+      categories: [
+        {
+          id: "initial",
+          title: "初期費用（お迎え時）",
+          description: "犬を迎える際に必要な基本的な用品",
+          icon: "1",
+          items: [
+            { name: "ケージ・サークル", cost: "¥8,000 - ¥20,000" },
+            { name: "食器・水入れ", cost: "¥2,000 - ¥5,000" },
+            { name: "トイレ・トレー", cost: "¥3,000 - ¥8,000" },
+            { name: "ベッド・クッション", cost: "¥3,000 - ¥10,000" },
+            { name: "首輪・リード", cost: "¥2,000 - ¥6,000" },
+            { name: "おもちゃ", cost: "¥2,000 - ¥5,000" }
+          ],
+          total: "¥20,000 - ¥54,000"
+        },
+        {
+          id: "monthly",
+          title: "毎月の費用",
+          description: "継続的にかかる月額費用",
+          icon: "2",
+          items: [
+            { name: "フード", cost: "¥3,000 - ¥8,000" },
+            { name: "おやつ", cost: "¥1,000 - ¥3,000" },
+            { name: "ペットシーツ", cost: "¥1,500 - ¥3,000" },
+            { name: "ペット保険", cost: "¥2,000 - ¥5,000" }
+          ],
+          total: "¥7,500 - ¥19,000"
+        },
+        {
+          id: "health",
+          title: "年間健康管理費用",
+          description: "予防接種や健康診断など",
+          icon: "3",
+          items: [
+            { name: "混合ワクチン（年1回）", cost: "¥5,000 - ¥8,000" },
+            { name: "狂犬病ワクチン（年1回）", cost: "¥3,000 - ¥4,000" },
+            { name: "健康診断（年1-2回）", cost: "¥5,000 - ¥15,000" },
+            { name: "フィラリア予防（年間）", cost: "¥8,000 - ¥15,000" }
+          ],
+          total: "¥21,000 - ¥42,000"
+        },
+        {
+          id: "medical",
+          title: "医療費（不定期）",
+          description: "病気や怪我の際の治療費",
+          icon: "4",
+          items: [
+            { name: "一般的な診察", cost: "¥2,000 - ¥5,000" },
+            { name: "去勢・避妊手術", cost: "¥20,000 - ¥50,000" },
+            { name: "歯科治療", cost: "¥10,000 - ¥30,000" },
+            { name: "緊急治療・手術", cost: "¥50,000 - ¥200,000+" }
+          ],
+          total: "参考価格"
+        }
+      ]
     };
   }
 }

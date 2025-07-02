@@ -104,7 +104,7 @@ const FormScreen: React.FC<FormScreenProps> = ({ onSubmit }) => {
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-green-400 to-blue-500 px-6 py-4">
-            <h1 className="text-xl font-bold text-white">愛犬の情報を入力してください</h1>
+            <h1 className="text-xl font-bold text-white">予測する子犬の情報を入力してください</h1>
             <p className="text-green-100 text-sm mt-1">すべての必須項目を入力してください</p>
           </div>
 

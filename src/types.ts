@@ -38,6 +38,21 @@ export interface WeightEvaluation {
   };
 }
 
+// Cost simulation types
+export interface CostSimulation {
+  categories: Array<{
+    id: string;
+    title: string;
+    description: string;
+    icon: string;
+    items: Array<{
+      name: string;
+      cost: string;
+    }>;
+    total: string;
+  }>;
+}
+
 // API response types
 export interface PredictionResult {
   predictedWeight: number;
@@ -51,6 +66,7 @@ export interface PredictionResult {
     cost: string;
   };
   weightEvaluation: WeightEvaluation;
+  costSimulation: CostSimulation;
 }
 
 // Dog breed data

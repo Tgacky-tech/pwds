@@ -404,142 +404,52 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
               {openSections.cost && (
                 <div className="px-6 py-4 border-t border-gray-200">
                   <div className="space-y-6">
-                    {/* Initial Costs */}
-                    <div className="bg-purple-50 rounded-lg p-4">
-                      <h4 className="font-semibold text-purple-800 mb-3 flex items-center">
-                        <span className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm mr-2">1</span>
-                        初期費用（お迎え時）
-                      </h4>
-                      <div className="text-sm text-purple-700 mb-3">ケージ、食器、トイレなど</div>
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div className="flex justify-between py-1 border-b border-purple-200">
-                          <span>ケージ・サークル</span>
-                          <span className="font-medium">¥8,000 - ¥20,000</span>
+                    {result.costSimulation.categories.map((category, index) => {
+                      const colorClasses = [
+                        { bg: "bg-purple-50", text: "text-purple-800", border: "border-purple-200", button: "bg-purple-600" },
+                        { bg: "bg-blue-50", text: "text-blue-800", border: "border-blue-200", button: "bg-blue-600" },
+                        { bg: "bg-green-50", text: "text-green-800", border: "border-green-200", button: "bg-green-600" },
+                        { bg: "bg-orange-50", text: "text-orange-800", border: "border-orange-200", button: "bg-orange-600" }
+                      ];
+                      const colors = colorClasses[index % colorClasses.length];
+                      
+                      return (
+                        <div key={category.id} className={`${colors.bg} rounded-lg p-4`}>
+                          <h4 className={`font-semibold ${colors.text} mb-3 flex items-center`}>
+                            <span className={`w-6 h-6 ${colors.button} text-white rounded-full flex items-center justify-center text-sm mr-2`}>
+                              {category.icon}
+                            </span>
+                            {category.title}
+                          </h4>
+                          <div className={`text-sm ${colors.text.replace('800', '700')} mb-3`}>
+                            {category.description}
+                          </div>
+                          <div className={`${category.items.length > 4 ? 'grid grid-cols-2 gap-3' : 'space-y-2'} text-sm`}>
+                            {category.items.map((item, itemIndex) => (
+                              <div key={itemIndex} className={`flex justify-between py-1 border-b ${colors.border}`}>
+                                <span>{item.name}</span>
+                                <span className="font-medium">{item.cost}</span>
+                              </div>
+                            ))}
+                          </div>
+                          {category.total && (
+                            <div className={`mt-3 pt-3 border-t ${colors.border}`}>
+                              <div className={`flex justify-between font-semibold ${colors.text}`}>
+                                <span>{category.id === 'medical' ? '参考価格' : '合計目安'}</span>
+                                <span>{category.total}</span>
+                              </div>
+                            </div>
+                          )}
+                          {category.id === 'medical' && (
+                            <div className={`mt-3 pt-3 border-t ${colors.border}`}>
+                              <p className={`text-xs ${colors.text.replace('800', '700')}`}>
+                                ※ 病気や怪我の内容により費用は大きく変動します。ペット保険の加入をおすすめします。
+                              </p>
+                            </div>
+                          )}
                         </div>
-                        <div className="flex justify-between py-1 border-b border-purple-200">
-                          <span>食器・水入れ</span>
-                          <span className="font-medium">¥2,000 - ¥5,000</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b border-purple-200">
-                          <span>トイレ・トレー</span>
-                          <span className="font-medium">¥3,000 - ¥8,000</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b border-purple-200">
-                          <span>ベッド・クッション</span>
-                          <span className="font-medium">¥3,000 - ¥10,000</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b border-purple-200">
-                          <span>首輪・リード</span>
-                          <span className="font-medium">¥2,000 - ¥6,000</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b border-purple-200">
-                          <span>おもちゃ</span>
-                          <span className="font-medium">¥2,000 - ¥5,000</span>
-                        </div>
-                      </div>
-                      <div className="mt-3 pt-3 border-t border-purple-200">
-                        <div className="flex justify-between font-semibold text-purple-800">
-                          <span>合計目安</span>
-                          <span>¥20,000 - ¥54,000</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Monthly Costs */}
-                    <div className="bg-blue-50 rounded-lg p-4">
-                      <h4 className="font-semibold text-blue-800 mb-3 flex items-center">
-                        <span className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm mr-2">2</span>
-                        毎月の費用
-                      </h4>
-                      <div className="text-sm text-blue-700 mb-3">フード、おやつ、ペットシーツ、ペット保険</div>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between py-1 border-b border-blue-200">
-                          <span>フード</span>
-                          <span className="font-medium">¥3,000 - ¥8,000</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b border-blue-200">
-                          <span>おやつ</span>
-                          <span className="font-medium">¥1,000 - ¥3,000</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b border-blue-200">
-                          <span>ペットシーツ</span>
-                          <span className="font-medium">¥1,500 - ¥3,000</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b border-blue-200">
-                          <span>ペット保険</span>
-                          <span className="font-medium">¥2,000 - ¥5,000</span>
-                        </div>
-                      </div>
-                      <div className="mt-3 pt-3 border-t border-blue-200">
-                        <div className="flex justify-between font-semibold text-blue-800">
-                          <span>月額合計目安</span>
-                          <span>¥7,500 - ¥19,000</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Health Costs */}
-                    <div className="bg-green-50 rounded-lg p-4">
-                      <h4 className="font-semibold text-green-800 mb-3 flex items-center">
-                        <span className="w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-sm mr-2">3</span>
-                        ワクチン・健康診断
-                      </h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between py-1 border-b border-green-200">
-                          <span>混合ワクチン（年1回）</span>
-                          <span className="font-medium">¥5,000 - ¥8,000</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b border-green-200">
-                          <span>狂犬病ワクチン（年1回）</span>
-                          <span className="font-medium">¥3,000 - ¥4,000</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b border-green-200">
-                          <span>健康診断（年1-2回）</span>
-                          <span className="font-medium">¥5,000 - ¥15,000</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b border-green-200">
-                          <span>フィラリア予防（年間）</span>
-                          <span className="font-medium">¥8,000 - ¥15,000</span>
-                        </div>
-                      </div>
-                      <div className="mt-3 pt-3 border-t border-green-200">
-                        <div className="flex justify-between font-semibold text-green-800">
-                          <span>年間合計目安</span>
-                          <span>¥21,000 - ¥42,000</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Medical Costs */}
-                    <div className="bg-orange-50 rounded-lg p-4">
-                      <h4 className="font-semibold text-orange-800 mb-3 flex items-center">
-                        <span className="w-6 h-6 bg-orange-600 text-white rounded-full flex items-center justify-center text-sm mr-2">4</span>
-                        不定期の医療費
-                      </h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between py-1 border-b border-orange-200">
-                          <span>一般的な診察</span>
-                          <span className="font-medium">¥2,000 - ¥5,000</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b border-orange-200">
-                          <span>去勢・避妊手術</span>
-                          <span className="font-medium">¥20,000 - ¥50,000</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b border-orange-200">
-                          <span>歯科治療</span>
-                          <span className="font-medium">¥10,000 - ¥30,000</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b border-orange-200">
-                          <span>緊急治療・手術</span>
-                          <span className="font-medium">¥50,000 - ¥200,000+</span>
-                        </div>
-                      </div>
-                      <div className="mt-3 pt-3 border-t border-orange-200">
-                        <p className="text-xs text-orange-700">
-                          ※ 病気や怪我の内容により費用は大きく変動します。ペット保険の加入をおすすめします。
-                        </p>
-                      </div>
-                    </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
