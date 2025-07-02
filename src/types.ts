@@ -31,7 +31,11 @@ export interface WeightEvaluation {
   grade: 'A' | 'B' | 'C' | 'D' | 'E';
   description: string;
   advice: string;
-  appropriateWeight: number;
+  appropriateWeightRange: {
+    min: number;
+    max: number;
+    center: number;
+  };
 }
 
 // API response types

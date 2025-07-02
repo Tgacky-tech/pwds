@@ -245,7 +245,7 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
                       <div className="flex items-start space-x-2">
                         <div className="text-yellow-600 font-bold text-sm">⚠️</div>
                         <div>
-                          <h4 className="font-semibold text-yellow-800 mb-2">使用前注意：</h4>
+                          <h4 className="font-semibold text-yellow-800 mb-2">使用上の注意：</h4>
                           <p className="text-yellow-700 text-sm leading-relaxed">
                             本サービスは、子犬の購入を検討されている方への参考情報の提供を目的としており、犬種・生後日数・体重等に基づく簡易的な目安を提示するものです。獣医師による診断や医療的判断を行うものではありません。正確な健康状態の評価が必要な場合は、必ず獣医師にご相談ください。
                           </p>
@@ -278,9 +278,9 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
                             </span>
                           </div>
                           <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                            <span className="text-sm text-gray-600">適正体重：</span>
+                            <span className="text-sm text-gray-600">適正体重範囲：</span>
                             <span className="font-medium text-gray-800">
-                              {result.weightEvaluation.appropriateWeight.toFixed(2)}kg
+                              {result.weightEvaluation.appropriateWeightRange.min.toFixed(2)}〜{result.weightEvaluation.appropriateWeightRange.max.toFixed(2)}kg
                             </span>
                           </div>
                         </div>
