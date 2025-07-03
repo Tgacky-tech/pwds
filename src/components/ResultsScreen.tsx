@@ -104,7 +104,7 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({
               </div>
               <div>
                 <div className="text-lg font-bold text-gray-800">25cm〜30cm</div>
-                <div className="text-sm text-gray-600">体長（鼻先〜尾のつけ根）</div>
+                <div className="text-sm text-gray-600">体長</div>
               </div>
             </div>
           </div>

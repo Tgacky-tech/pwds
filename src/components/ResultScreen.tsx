@@ -143,25 +143,19 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
                     {result.predictedLength} cm
                   </div>
                   <div className="text-sm text-gray-600">体長</div>
-                  <div className="text-xs text-gray-500">
-                    鼻先〜尻尾付け根
-                  </div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-amber-600 mb-1">
                     {result.predictedHeight} cm
                   </div>
                   <div className="text-sm text-gray-600">体高</div>
-                  <div className="text-xs text-gray-500">
-                    地面〜肩甲骨最高点
-                  </div>
                 </div>
               </div>
             </div>
 
             {/* Satisfaction Survey */}
             <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-6">
-              <h4 className="font-semibold text-gray-800 mb-4 text-center">この結果に満足頂けましたか？</h4>
+              <h4 className="font-semibold text-gray-800 mb-4 text-center">サービスにご満足いただけましたか？</h4>
               <div className="flex justify-center space-x-4">
                 <button 
                   onClick={() => handleSatisfactionClick('yes')}
