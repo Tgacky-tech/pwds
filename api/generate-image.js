@@ -1,21 +1,6 @@
-interface DataCrunchResponse {
-  output: {
-    images?: string[];
-    message?: string;
-  };
-  error?: string;
-}
-
-interface GenerateImageRequest {
-  prompt: string;
-  breed: string;
-  gender: string;
-  predictedWeight: number;
-}
-
 const DATACRUNCH_API_KEY = process.env.DATACRUNCH_API_KEY;
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -45,7 +30,7 @@ export default async function handler(req: any, res: any) {
       platform: process.platform 
     });
     
-    const { prompt, breed, gender, predictedWeight }: GenerateImageRequest = req.body;
+    const { prompt, breed, gender, predictedWeight } = req.body;
 
     if (!prompt || !breed || !gender || !predictedWeight) {
       console.log('❌ 必須パラメータ不足:', { prompt: !!prompt, breed: !!breed, gender: !!gender, predictedWeight: !!predictedWeight });
@@ -126,7 +111,7 @@ export default async function handler(req: any, res: any) {
       }
     }
     
-    const result = await response.json() as DataCrunchResponse;
+    const result = await response.json();
     
     console.log('📝 レスポンス結果:', result);
     
@@ -151,5 +136,4 @@ export default async function handler(req: any, res: any) {
       details: error instanceof Error ? error.stack : 'No details available'
     });
   }
-};
-
+}
