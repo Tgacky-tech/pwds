@@ -254,7 +254,7 @@ function createImagePromptGenerationPrompt(formData: DogFormData, predictedWeigh
 }
 
 // Gemini APIを使って適正体重範囲を取得
-async function getAppropriateWeightRange(formData: DogFormData): Promise<{min: number, max: number, center: number, ranges: {A: {min: number, max: number}, B: {min: number, max: number}, C: {min: number, max: number}, D: {min: number, max: number}, E: {min: number, max: number}}}> {
+async function getAppropriateWeightRange(formData: DogFormData): Promise<{min: number, max: number, center: number, ranges: {A: {threshold: number}, B: {min: number, max: number}, C: {min: number, max: number}, D: {min: number, max: number}, E: {threshold: number}}}> {
   const birthDate = new Date(formData.birthDate);
   const today = new Date();
   const ageInDays = Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -286,11 +286,11 @@ JSON形式で以下の情報を提供してください：
   "maxWeight": [適正体重範囲の最大値（数値・kg）],
   "centerWeight": [適正体重範囲の中央値（数値・kg）],
   "ranges": {
-    "A": {"min": [痩せすぎの最小値], "max": [痩せすぎの最大値]},
+    "A": {"threshold": [痩せすぎの上限値（この値以下がA判定）]},
     "B": {"min": [やや痩せ気味の最小値], "max": [やや痩せ気味の最大値]},
     "C": {"min": [適正範囲内の最小値], "max": [適正範囲内の最大値]},
     "D": {"min": [やや重めの最小値], "max": [やや重めの最大値]},
-    "E": {"min": [太り気味の最小値], "max": [太り気味の最大値]}
+    "E": {"threshold": [太り気味の下限値（この値以上がE判定）]}
   }
 }
 
@@ -299,7 +299,9 @@ JSON形式で以下の情報を提供してください：
 - 性別による体格差を反映してください
 - 生まれてからの日数と現在の月齢に適した体重範囲を算出してください
 - 両親の体重情報がある場合は参考にしてください
-- A～Eの範囲は連続的で重複しないように設定してください
+- A評価は上限値以下の全ての体重（下限なし）
+- E評価は下限値以上の全ての体重（上限なし）
+- B,C,Dの範囲は連続的で重複しないように設定してください
 - 実数値のみを返してください（単位は含めない）
 `;
 
@@ -343,8 +345,7 @@ JSON形式で以下の情報を提供してください：
     // A～Eの範囲を取得
     const ranges = {
       A: {
-        min: Number(parsed.ranges?.A?.min) || 0,
-        max: Number(parsed.ranges?.A?.max) || min * 0.8
+        threshold: Number(parsed.ranges?.A?.threshold) || min * 0.8
       },
       B: {
         min: Number(parsed.ranges?.B?.min) || min * 0.8,
@@ -359,8 +360,7 @@ JSON形式で以下の情報を提供してください：
         max: Number(parsed.ranges?.D?.max) || max * 1.2
       },
       E: {
-        min: Number(parsed.ranges?.E?.min) || max * 1.2,
-        max: Number(parsed.ranges?.E?.max) || max * 1.5
+        threshold: Number(parsed.ranges?.E?.threshold) || max * 1.2
       }
     };
     
@@ -380,11 +380,11 @@ JSON形式で以下の情報を提供してください：
     
     // フォールバック時のA～E範囲
     const ranges = {
-      A: { min: 0, max: min * 0.8 },
+      A: { threshold: min * 0.8 },
       B: { min: min * 0.8, max: min },
       C: { min: min, max: max },
       D: { min: max, max: max * 1.2 },
-      E: { min: max * 1.2, max: max * 1.5 }
+      E: { threshold: max * 1.2 }
     };
     
     return { min, max, center, ranges };
@@ -411,13 +411,22 @@ async function calculateWeightEvaluation(formData: DogFormData, _predictedWeight
   const { min, max, center, ranges } = appropriateWeightRange;
   
   // APIから取得したA～E範囲を使って評価
-  if (currentWeight <= ranges.A.max) {
-    // A: 痩せすぎ
+  if (currentWeight <= ranges.A.threshold) {
+    // A: 痩せすぎ（下限なし、閾値以下）
     return {
       category: 'underweight',
       grade: 'A',
       description: '痩せすぎ',
       advice: '体重は平均より軽めの傾向があります。体調や食事内容について気になる点がある場合は、かかりつけの獣医師にご相談ください。',
+      appropriateWeightRange
+    };
+  } else if (currentWeight >= ranges.E.threshold) {
+    // E: 太り気味（上限なし、閾値以上）
+    return {
+      category: 'overweight',
+      grade: 'E',
+      description: '太り気味',
+      advice: '体重は平均より重めの傾向があります。フードの量や生活環境の見直しを検討される際は、獣医師に相談されることをおすすめします。',
       appropriateWeightRange
     };
   } else if (currentWeight <= ranges.B.max) {
@@ -438,22 +447,13 @@ async function calculateWeightEvaluation(formData: DogFormData, _predictedWeight
       advice: '現在の体重は一般的な範囲内にあります。このまま成長を見守りましょう。',
       appropriateWeightRange
     };
-  } else if (currentWeight <= ranges.D.max) {
+  } else {
     // D: やや重め
     return {
       category: 'slightly_overweight',
       grade: 'D',
       description: 'やや重め',
       advice: 'やや重めの傾向があります。体型の変化や運動量なども参考にしながら観察を続けてください。',
-      appropriateWeightRange
-    };
-  } else {
-    // E: 太り気味
-    return {
-      category: 'overweight',
-      grade: 'E',
-      description: '太り気味',
-      advice: '体重は平均より重めの傾向があります。フードの量や生活環境の見直しを検討される際は、獣医師に相談されることをおすすめします。',
       appropriateWeightRange
     };
   }
