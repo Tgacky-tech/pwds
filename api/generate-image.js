@@ -115,8 +115,12 @@ export default async function handler(req, res) {
     
     console.log('📝 レスポンス結果:', result);
     
-    // DataCrunch APIは即座に結果を返すため、非同期処理は不要
-    if (result.output?.images && result.output.images.length > 0) {
+    // DataCrunch APIの応答形式を確認して適切に処理
+    if (result.output?.outputs && result.output.outputs.length > 0) {
+      const imageUrl = result.output.outputs[0];
+      console.log('✅ FLUX Kontext 画像生成完了:', imageUrl);
+      return res.status(200).json({ imageUrl });
+    } else if (result.output?.images && result.output.images.length > 0) {
       const imageUrl = result.output.images[0];
       console.log('✅ FLUX Kontext 画像生成完了:', imageUrl);
       return res.status(200).json({ imageUrl });
