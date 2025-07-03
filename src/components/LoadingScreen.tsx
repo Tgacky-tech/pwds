@@ -1,17 +1,15 @@
 import React, { useEffect, useState } from 'react';
 
 const LoadingScreen: React.FC = () => {
-  const [progressText, setProgressText] = useState('AIが予測を開始しています...');
+  const [progressText, setProgressText] = useState('AIが子犬の未来を予測中です…');
   const [showFireworks, setShowFireworks] = useState(false);
   
   useEffect(() => {
     const textMessages = [
-      { time: 0, text: 'AIが予測を開始しています...' },
-      { time: 1000, text: '成長パターンを分析中...' },
-      { time: 2000, text: '同じ犬種の成長データと比較しています...' },
-      { time: 3000, text: '予測画像を生成しています...' },
-      { time: 4000, text: '最終結果を計算中...' },
-      { time: 5000, text: '予測完了！' }
+      { time: 0, text: 'AIが子犬の未来を予測中です…' },
+      { time: 2000, text: '成長パターンを分析中…' },
+      { time: 4000, text: 'AIの結果を出力中…' },
+      { time: 6000, text: '予測完了！' }
     ];
     
     const timers = textMessages.map(({ time, text }) => 
