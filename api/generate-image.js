@@ -30,7 +30,7 @@ export default async function handler(req, res) {
       platform: process.platform 
     });
     
-    const { prompt, breed, gender, predictedWeight } = req.body;
+    const { prompt, breed, gender, predictedWeight, predictedLength, predictedHeight } = req.body;
 
     if (!prompt || !breed || !gender || !predictedWeight) {
       console.log('❌ 必須パラメータ不足:', { prompt: !!prompt, breed: !!breed, gender: !!gender, predictedWeight: !!predictedWeight });
@@ -48,8 +48,11 @@ export default async function handler(req, res) {
     // 性別の英語変換
     const genderEn = gender === "オス" ? "male" : "female";
     
-    // より詳細なプロンプト作成（人とのサイズ比較を含む）
-    const enhancedPrompt = `A realistic photo of an adult ${genderEn} ${breed} dog weighing approximately ${predictedWeight}kg standing next to a human person for size comparison, full body shot of both dog and human, high quality, professional photography. ${prompt}`;
+    // より詳細なプロンプト作成（人とのサイズ比較と具体的なサイズ情報を含む）
+    const sizeInfo = predictedLength && predictedHeight 
+      ? `body length ${predictedLength}cm (nose to tail base), height ${predictedHeight}cm (ground to shoulder blade), `
+      : '';
+    const enhancedPrompt = `A realistic photo of an adult ${genderEn} ${breed} dog weighing approximately ${predictedWeight}kg, ${sizeInfo}standing next to a human person for size comparison, full body shot of both dog and human, high quality, professional photography. ${prompt}`;
     
     console.log('🎨 FLUX Kontext 画像生成開始:', { breed, gender, predictedWeight });
     

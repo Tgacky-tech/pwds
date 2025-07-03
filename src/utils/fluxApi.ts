@@ -3,6 +3,8 @@ interface FluxGenerationInput {
   breed: string;
   gender: string;
   predictedWeight: number;
+  predictedLength: number;
+  predictedHeight: number;
 }
 
 interface ApiResponse {
@@ -14,10 +16,12 @@ export const generateDogImage = async ({
   prompt,
   breed,
   gender,
-  predictedWeight
+  predictedWeight,
+  predictedLength,
+  predictedHeight
 }: FluxGenerationInput): Promise<string | null> => {
   try {
-    console.log('🎨 FLUX.1 画像生成開始:', { breed, gender, predictedWeight });
+    console.log('🎨 FLUX.1 画像生成開始:', { breed, gender, predictedWeight, predictedLength, predictedHeight });
     
     // FLUX.1 API経由で画像生成を試行
     console.log('🚀 実際のFLUX.1 API呼び出し開始...');
@@ -33,7 +37,9 @@ export const generateDogImage = async ({
           prompt,
           breed,
           gender,
-          predictedWeight
+          predictedWeight,
+          predictedLength,
+          predictedHeight
         })
       });
       

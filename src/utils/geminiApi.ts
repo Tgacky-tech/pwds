@@ -21,7 +21,7 @@ export const predictDogGrowthWithGemini = async (formData: DogFormData): Promise
     const predictionData = await generatePredictionData(formData);
     
     // 2. 画像生成用プロンプトを生成
-    const imagePrompt = await generateImagePrompt(formData, predictionData.predictedWeight);
+    const imagePrompt = await generateImagePrompt(formData, predictionData.predictedWeight, predictionData.predictedLength, predictionData.predictedHeight);
     
     // 3. FLUX.1で画像を生成
     console.log('🎨 FLUX.1画像生成開始...');
@@ -29,7 +29,9 @@ export const predictDogGrowthWithGemini = async (formData: DogFormData): Promise
       prompt: imagePrompt,
       breed: formData.breed || 'ミックス',
       gender: formData.gender === 'male' ? 'オス' : 'メス',
-      predictedWeight: predictionData.predictedWeight
+      predictedWeight: predictionData.predictedWeight,
+      predictedLength: predictionData.predictedLength,
+      predictedHeight: predictionData.predictedHeight
     });
     
     // 4. 体重評価を生成
@@ -119,8 +121,8 @@ async function generatePredictionData(formData: DogFormData) {
 }
 
 // 画像生成用プロンプト生成（レート制限対応）
-async function generateImagePrompt(formData: DogFormData, predictedWeight: number): Promise<string> {
-  const prompt = createImagePromptGenerationPrompt(formData, predictedWeight);
+async function generateImagePrompt(formData: DogFormData, predictedWeight: number, predictedLength: number, predictedHeight: number): Promise<string> {
+  const prompt = createImagePromptGenerationPrompt(formData, predictedWeight, predictedLength, predictedHeight);
   
   // レート制限対応: 最大3回のリトライを実行
   for (let attempt = 1; attempt <= 3; attempt++) {
@@ -227,7 +229,7 @@ JSON形式で以下の情報を提供してください：
 }
 
 // 画像プロンプト生成用プロンプト作成
-function createImagePromptGenerationPrompt(formData: DogFormData, predictedWeight: number): string {
+function createImagePromptGenerationPrompt(formData: DogFormData, predictedWeight: number, predictedLength: number, predictedHeight: number): string {
   return `
 犬種「${formData.breed}」の成犬時の画像を生成するための詳細なプロンプトを作成してください。
 
@@ -235,6 +237,8 @@ function createImagePromptGenerationPrompt(formData: DogFormData, predictedWeigh
 - 犬種: ${formData.breed}
 - 性別: ${formData.gender === 'male' ? 'オス' : 'メス'}
 - 予測体重: ${predictedWeight}kg
+- 予測体長: ${predictedLength}cm (鼻先から尻尾の付け根まで)
+- 予測体高: ${predictedHeight}cm (地面から肩甲骨の頂点まで)
 
 ## 要求事項
 - 画像生成AI（DALL-E、Midjourney等）用の英語プロンプトを作成
@@ -243,6 +247,7 @@ function createImagePromptGenerationPrompt(formData: DogFormData, predictedWeigh
 - 横向きの全身写真
 - 白背景
 - 高品質で自然な写真調
+- 予測された体長と体高の比率を正確に反映
 
 プロンプトのみを出力してください（説明文は不要）。
 `;
