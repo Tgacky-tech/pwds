@@ -121,25 +121,6 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
                     (e.target as HTMLImageElement).src = '/default-dog.svg';
                   }}
                 />
-                <div className="absolute bottom-4 left-4 right-4">
-                  <div className="bg-black bg-opacity-70 text-white px-3 py-2 rounded-lg">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs">0cm</span>
-                      <span className="text-sm font-semibold">25cm</span>
-                    </div>
-                    <div className="relative h-2 bg-white bg-opacity-30 rounded">
-                      <div className="absolute inset-0 flex">
-                        {Array.from({ length: 5 }, (_, i) => (
-                          <div key={i} className="flex-1 border-r border-white border-opacity-50 last:border-r-0">
-                            <div className="h-full bg-white bg-opacity-60"></div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="absolute -top-1 left-0 w-0.5 h-4 bg-white"></div>
-                      <div className="absolute -top-1 right-0 w-0.5 h-4 bg-white"></div>
-                    </div>
-                  </div>
-                </div>
               </div>
               
             </div>

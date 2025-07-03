@@ -49,7 +49,7 @@ export default async function handler(req, res) {
     const genderEn = gender === "オス" ? "male" : "female";
     
     // より詳細なプロンプト作成（人とのサイズ比較を含む）
-    const enhancedPrompt = `A realistic photo of an adult ${genderEn} ${breed} dog weighing approximately ${predictedWeight}kg, full body shot, high quality, professional photography. ${prompt}`;
+    const enhancedPrompt = `A realistic photo of an adult ${genderEn} ${breed} dog weighing approximately ${predictedWeight}kg standing next to a human person for size comparison, full body shot of both dog and human, high quality, professional photography. ${prompt}`;
     
     console.log('🎨 FLUX Kontext 画像生成開始:', { breed, gender, predictedWeight });
     
