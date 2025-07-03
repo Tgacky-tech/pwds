@@ -22,7 +22,10 @@ const FormScreen: React.FC<FormScreenProps> = ({ onSubmit }) => {
     birthWeight: '',
     pastWeights: [],
     motherAdultWeight: '',
-    fatherAdultWeight: ''
+    fatherAdultWeight: '',
+    currentWeightVerified: false,
+    motherWeightVerified: false,
+    fatherWeightVerified: false
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -293,6 +296,18 @@ const FormScreen: React.FC<FormScreenProps> = ({ onSubmit }) => {
               {errors.currentWeight && (
                 <p className="text-red-500 text-xs mt-1">{errors.currentWeight}</p>
               )}
+              {/* Weight verification checkbox */}
+              <div className="mt-3">
+                <label className="flex items-center space-x-2 text-sm text-gray-600">
+                  <input
+                    type="checkbox"
+                    checked={formData.currentWeightVerified || false}
+                    onChange={(e) => handleInputChange('currentWeightVerified', e.target.checked)}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                  />
+                  <span>入力している体重は自分で確認したものです</span>
+                </label>
+              </div>
             </div>
 
             {/* Photo Upload */}
@@ -458,6 +473,18 @@ const FormScreen: React.FC<FormScreenProps> = ({ onSubmit }) => {
                       {errors.motherAdultWeight && (
                         <p className="text-red-500 text-xs mt-1">{errors.motherAdultWeight}</p>
                       )}
+                      {/* Mother weight verification checkbox */}
+                      <div className="mt-2">
+                        <label className="flex items-center space-x-2 text-xs text-gray-600">
+                          <input
+                            type="checkbox"
+                            checked={formData.motherWeightVerified || false}
+                            onChange={(e) => handleInputChange('motherWeightVerified', e.target.checked)}
+                            className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-1"
+                          />
+                          <span>入力している体重は自分で確認したものです</span>
+                        </label>
+                      </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -480,6 +507,18 @@ const FormScreen: React.FC<FormScreenProps> = ({ onSubmit }) => {
                       {errors.fatherAdultWeight && (
                         <p className="text-red-500 text-xs mt-1">{errors.fatherAdultWeight}</p>
                       )}
+                      {/* Father weight verification checkbox */}
+                      <div className="mt-2">
+                        <label className="flex items-center space-x-2 text-xs text-gray-600">
+                          <input
+                            type="checkbox"
+                            checked={formData.fatherWeightVerified || false}
+                            onChange={(e) => handleInputChange('fatherWeightVerified', e.target.checked)}
+                            className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-1"
+                          />
+                          <span>入力している体重は自分で確認したものです</span>
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>

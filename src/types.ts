@@ -21,6 +21,10 @@ export interface DogFormData {
   pastWeights?: Array<{ date: string; weight: number }>;
   motherAdultWeight?: number | '';
   fatherAdultWeight?: number | '';
+  // Weight verification flags
+  currentWeightVerified?: boolean;
+  motherWeightVerified?: boolean;
+  fatherWeightVerified?: boolean;
 }
 
 // Weight evaluation categories
