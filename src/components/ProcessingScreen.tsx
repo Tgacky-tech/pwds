@@ -46,13 +46,9 @@ const ProcessingScreen: React.FC = () => {
           {progressText}
         </p>
         
-        <div className="w-80 bg-gray-200 rounded-full h-4 mb-4 overflow-hidden mx-auto">
+        <div className="w-80 bg-gray-200 rounded-full h-4 overflow-hidden mx-auto">
           <div className="bg-gradient-to-r from-green-500 to-blue-600 h-4 rounded-full animate-progress-fast"></div>
         </div>
-        
-        <p className="text-sm text-gray-500">
-          最長20秒お待ちください
-        </p>
       </div>
     </div>
   );
