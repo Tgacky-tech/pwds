@@ -254,14 +254,14 @@ function createImagePromptGenerationPrompt(formData: DogFormData, predictedWeigh
 }
 
 // Gemini APIを使って適正体重範囲を取得
-async function getAppropriateWeightRange(formData: DogFormData): Promise<{min: number, max: number, center: number}> {
+async function getAppropriateWeightRange(formData: DogFormData): Promise<{min: number, max: number, center: number, ranges: {A: {min: number, max: number}, B: {min: number, max: number}, C: {min: number, max: number}, D: {min: number, max: number}, E: {min: number, max: number}}}> {
   const birthDate = new Date(formData.birthDate);
   const today = new Date();
   const ageInDays = Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24));
   const ageInMonths = Math.floor(ageInDays / 30);
 
   const prompt = `
-あなたは経験豊富な獣医師です。以下の犬の情報に基づいて、現在の月齢における適正体重範囲を算出してください。
+あなたは経験豊富な獣医師です。以下の犬の情報に基づいて、現在の月齢における体重評価の5段階範囲（A～E）を算出してください。
 
 ## 犬の情報
 - 犬種: ${formData.breed || '不明'}
@@ -271,13 +271,27 @@ async function getAppropriateWeightRange(formData: DogFormData): Promise<{min: n
 ${formData.motherAdultWeight ? `- 母親の成犬時体重: ${formData.motherAdultWeight}kg` : ''}
 ${formData.fatherAdultWeight ? `- 父親の成犬時体重: ${formData.fatherAdultWeight}kg` : ''}
 
+## 評価基準
+- A: 痩せすぎ
+- B: やや痩せ気味
+- C: 適正範囲内
+- D: やや重め
+- E: 太り気味
+
 ## 出力形式（必ずこの形式で回答してください）
 JSON形式で以下の情報を提供してください：
 
 {
-  "minWeight": [現在の月齢における適正体重の最小値（数値・kg）],
-  "maxWeight": [現在の月齢における適正体重の最大値（数値・kg）],
-  "centerWeight": [適正体重範囲の中央値（数値・kg）]
+  "minWeight": [適正体重範囲の最小値（数値・kg）],
+  "maxWeight": [適正体重範囲の最大値（数値・kg）],
+  "centerWeight": [適正体重範囲の中央値（数値・kg）],
+  "ranges": {
+    "A": {"min": [痩せすぎの最小値], "max": [痩せすぎの最大値]},
+    "B": {"min": [やや痩せ気味の最小値], "max": [やや痩せ気味の最大値]},
+    "C": {"min": [適正範囲内の最小値], "max": [適正範囲内の最大値]},
+    "D": {"min": [やや重めの最小値], "max": [やや重めの最大値]},
+    "E": {"min": [太り気味の最小値], "max": [太り気味の最大値]}
+  }
 }
 
 ## 注意事項
@@ -285,7 +299,7 @@ JSON形式で以下の情報を提供してください：
 - 性別による体格差を反映してください
 - 生まれてからの日数と現在の月齢に適した体重範囲を算出してください
 - 両親の体重情報がある場合は参考にしてください
-- 現在の体重は参考にせず、犬種・性別・月齢のみから適正体重範囲を算出してください
+- A～Eの範囲は連続的で重複しないように設定してください
 - 実数値のみを返してください（単位は含めない）
 `;
 
@@ -326,7 +340,31 @@ JSON形式で以下の情報を提供してください：
     const max = Number(parsed.maxWeight) || 3.0;
     const center = Number(parsed.centerWeight) || (min + max) / 2;
     
-    return { min, max, center };
+    // A～Eの範囲を取得
+    const ranges = {
+      A: {
+        min: Number(parsed.ranges?.A?.min) || 0,
+        max: Number(parsed.ranges?.A?.max) || min * 0.8
+      },
+      B: {
+        min: Number(parsed.ranges?.B?.min) || min * 0.8,
+        max: Number(parsed.ranges?.B?.max) || min
+      },
+      C: {
+        min: Number(parsed.ranges?.C?.min) || min,
+        max: Number(parsed.ranges?.C?.max) || max
+      },
+      D: {
+        min: Number(parsed.ranges?.D?.min) || max,
+        max: Number(parsed.ranges?.D?.max) || max * 1.2
+      },
+      E: {
+        min: Number(parsed.ranges?.E?.min) || max * 1.2,
+        max: Number(parsed.ranges?.E?.max) || max * 1.5
+      }
+    };
+    
+    return { min, max, center, ranges };
   } catch (error) {
     console.error('Failed to get appropriate weight range:', error);
     // フォールバック: 犬種と月齢に基づく簡易計算
@@ -340,7 +378,16 @@ JSON形式で以下の情報を提供してください：
     const min = center * 0.85;
     const max = center * 1.15;
     
-    return { min, max, center };
+    // フォールバック時のA～E範囲
+    const ranges = {
+      A: { min: 0, max: min * 0.8 },
+      B: { min: min * 0.8, max: min },
+      C: { min: min, max: max },
+      D: { min: max, max: max * 1.2 },
+      E: { min: max * 1.2, max: max * 1.5 }
+    };
+    
+    return { min, max, center, ranges };
   }
 }
 
@@ -361,13 +408,10 @@ async function calculateWeightEvaluation(formData: DogFormData, _predictedWeight
     };
   }
 
-  const { min, max, center } = appropriateWeightRange;
+  const { min, max, center, ranges } = appropriateWeightRange;
   
-  // 現在体重と適正体重範囲を比較して5段階評価
-  const centerRatio = currentWeight / center;
-  
-  // 新しい5段階評価システム
-  if (centerRatio < 0.8) {
+  // APIから取得したA～E範囲を使って評価
+  if (currentWeight <= ranges.A.max) {
     // A: 痩せすぎ
     return {
       category: 'underweight',
@@ -376,7 +420,7 @@ async function calculateWeightEvaluation(formData: DogFormData, _predictedWeight
       advice: '体重は平均より軽めの傾向があります。体調や食事内容について気になる点がある場合は、かかりつけの獣医師にご相談ください。',
       appropriateWeightRange
     };
-  } else if (centerRatio < 0.9) {
+  } else if (currentWeight <= ranges.B.max) {
     // B: やや痩せ気味
     return {
       category: 'slightly_underweight',
@@ -385,8 +429,8 @@ async function calculateWeightEvaluation(formData: DogFormData, _predictedWeight
       advice: 'やや軽めの傾向がありますが、成長途中の個体差もあります。継続して様子を見てあげてください。',
       appropriateWeightRange
     };
-  } else if (centerRatio <= 1.1) {
-    // C: 適正範囲内（範囲を広げてCが適正範囲の全てになるように調整）
+  } else if (currentWeight <= ranges.C.max) {
+    // C: 適正範囲内
     return {
       category: 'ideal',
       grade: 'C',
@@ -394,7 +438,7 @@ async function calculateWeightEvaluation(formData: DogFormData, _predictedWeight
       advice: '現在の体重は一般的な範囲内にあります。このまま成長を見守りましょう。',
       appropriateWeightRange
     };
-  } else if (centerRatio < 1.2) {
+  } else if (currentWeight <= ranges.D.max) {
     // D: やや重め
     return {
       category: 'slightly_overweight',
