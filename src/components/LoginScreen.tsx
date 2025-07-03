@@ -87,7 +87,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onNavigateToForm }) 
               className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
             />
             <span className="text-sm text-gray-700">
-              利用規約に同意します
+              利用規約、プライバシーポリシーに同意します
             </span>
           </label>
         </div>
