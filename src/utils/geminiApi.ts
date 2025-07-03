@@ -363,47 +363,53 @@ async function calculateWeightEvaluation(formData: DogFormData, _predictedWeight
 
   const { min, max, center } = appropriateWeightRange;
   
-  // 現在体重と適正体重範囲を比較して評価
-  const isUnderweight = currentWeight < min;
-  const isOverweight = currentWeight > max;
-  
-  // 適正体重範囲の中央値を使って詳細評価
+  // 現在体重と適正体重範囲を比較して5段階評価
   const centerRatio = currentWeight / center;
-  const deviationPercent = Math.abs(centerRatio - 1) * 100;
   
-  if (isUnderweight) {
-    const severity = currentWeight < min * 0.8 ? 'severe' : 'moderate';
+  // 新しい5段階評価システム
+  if (centerRatio < 0.8) {
+    // A: 痩せすぎ
     return {
-      category: severity === 'severe' ? 'underweight' : 'slightly_underweight',
-      grade: severity === 'severe' ? 'E' : 'D',
-      description: severity === 'severe' ? '痩せすぎ' : 'やや痩せ',
-      advice: severity === 'severe' 
-        ? `適正体重範囲(${min.toFixed(2)}〜${max.toFixed(2)}kg)を大きく下回っています。栄養状態や健康状態について至急獣医師にご相談ください。`
-        : `適正体重範囲(${min.toFixed(2)}〜${max.toFixed(2)}kg)をやや下回っています。食事量の調整について獣医師にご相談ください。`,
+      category: 'underweight',
+      grade: 'A',
+      description: '痩せすぎ',
+      advice: '体重は平均より軽めの傾向があります。体調や食事内容について気になる点がある場合は、かかりつけの獣医師にご相談ください。',
       appropriateWeightRange
     };
-  } else if (isOverweight) {
-    const severity = currentWeight > max * 1.2 ? 'severe' : 'moderate';
+  } else if (centerRatio < 0.9) {
+    // B: やや痩せ気味
     return {
-      category: severity === 'severe' ? 'overweight' : 'slightly_overweight',
-      grade: severity === 'severe' ? 'E' : 'D',
-      description: severity === 'severe' ? '太りすぎ' : 'やや太り',
-      advice: severity === 'severe'
-        ? `適正体重範囲(${min.toFixed(2)}〜${max.toFixed(2)}kg)を大きく上回っています。食事管理と運動について至急獣医師にご相談ください。`
-        : `適正体重範囲(${min.toFixed(2)}〜${max.toFixed(2)}kg)をやや上回っています。食事量と運動量の調整について獣医師にご相談ください。`,
+      category: 'slightly_underweight',
+      grade: 'B',
+      description: 'やや痩せ気味',
+      advice: 'やや軽めの傾向がありますが、成長途中の個体差もあります。継続して様子を見てあげてください。',
+      appropriateWeightRange
+    };
+  } else if (centerRatio <= 1.1) {
+    // C: 適正範囲内（範囲を広げてCが適正範囲の全てになるように調整）
+    return {
+      category: 'ideal',
+      grade: 'C',
+      description: '適正範囲内',
+      advice: '現在の体重は一般的な範囲内にあります。このまま成長を見守りましょう。',
+      appropriateWeightRange
+    };
+  } else if (centerRatio < 1.2) {
+    // D: やや重め
+    return {
+      category: 'slightly_overweight',
+      grade: 'D',
+      description: 'やや重め',
+      advice: 'やや重めの傾向があります。体型の変化や運動量なども参考にしながら観察を続けてください。',
       appropriateWeightRange
     };
   } else {
-    // 適正範囲内での詳細評価（中央値からの偏差で判定）
-    const grade = deviationPercent < 5 ? 'A' : deviationPercent < 10 ? 'B' : 'C';
-    
+    // E: 太り気味
     return {
-      category: 'ideal',
-      grade,
-      description: '適正範囲内',
-      advice: grade === 'A' 
-        ? `体重は適正体重範囲(${min.toFixed(2)}〜${max.toFixed(2)}kg)の理想的な範囲にあります。現在の食事と運動を継続してください。`
-        : `体重は適正体重範囲(${min.toFixed(2)}〜${max.toFixed(2)}kg)内にあります。より理想的な体重に近づけるため、食事と運動のバランスを見直してみてください。`,
+      category: 'overweight',
+      grade: 'E',
+      description: '太り気味',
+      advice: '体重は平均より重めの傾向があります。フードの量や生活環境の見直しを検討される際は、獣医師に相談されることをおすすめします。',
       appropriateWeightRange
     };
   }
