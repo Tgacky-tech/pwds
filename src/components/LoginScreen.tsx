@@ -44,10 +44,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onNavigateToForm }) 
             <Heart className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
-            犬成長予測サービス
+            子犬の成犬時サイズ予測サービス
           </h1>
           <p className="text-gray-600 text-sm">
-            AIがあなたの愛犬の未来を予測します
+            AIが予測対象の子犬の未来を予測します
           </p>
         </div>
 
