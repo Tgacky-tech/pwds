@@ -17,7 +17,9 @@ console.log('🔍 Environment variables check:', {
   url_length: cleanSupabaseUrl?.length || 0,
   key_length: cleanSupabaseAnonKey?.length || 0,
   url_valid: cleanSupabaseUrl?.startsWith('https://'),
-  key_valid: cleanSupabaseAnonKey?.length > 50
+  key_valid: cleanSupabaseAnonKey?.length > 50,
+  url_preview: cleanSupabaseUrl?.substring(0, 30) + '...',
+  key_preview: cleanSupabaseAnonKey?.substring(0, 50) + '...'
 });
 
 if (!cleanSupabaseUrl || !cleanSupabaseAnonKey) {
