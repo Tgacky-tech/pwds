@@ -60,10 +60,16 @@ const FormScreen: React.FC<FormScreenProps> = ({ onSubmit }) => {
   };
 
   const addPastWeight = () => {
-    setFormData(prev => ({
-      ...prev,
-      pastWeights: [...(prev.pastWeights || []), { date: '', weight: '' as any }]
-    }));
+    setFormData(prev => {
+      const currentPastWeights = prev.pastWeights || [];
+      if (currentPastWeights.length >= 2) {
+        return prev; // 最大2件まで
+      }
+      return {
+        ...prev,
+        pastWeights: [...currentPastWeights, { date: '', weight: '' as any }]
+      };
+    });
   };
 
   const updatePastWeight = (index: number, field: 'date' | 'weight', value: string | number) => {
@@ -401,10 +407,15 @@ const FormScreen: React.FC<FormScreenProps> = ({ onSubmit }) => {
                       <button
                         type="button"
                         onClick={addPastWeight}
-                        className="flex items-center space-x-1 text-blue-600 hover:text-blue-700"
+                        disabled={(formData.pastWeights || []).length >= 2}
+                        className={`flex items-center space-x-1 ${
+                          (formData.pastWeights || []).length >= 2 
+                            ? 'text-gray-400 cursor-not-allowed' 
+                            : 'text-blue-600 hover:text-blue-700'
+                        }`}
                       >
                         <Plus className="w-4 h-4" />
-                        <span className="text-sm">追加</span>
+                        <span className="text-sm">追加 ({(formData.pastWeights || []).length}/2)</span>
                       </button>
                     </div>
                     {(formData.pastWeights || []).map((record, index) => (

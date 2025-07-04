@@ -30,7 +30,7 @@ export default async function handler(req, res) {
       platform: process.platform 
     });
     
-    const { prompt, breed, gender, predictedWeight, predictedLength, predictedHeight } = req.body;
+    const { prompt, breed, gender, predictedWeight, predictedLength, predictedHeight, referenceImages } = req.body;
 
     if (!prompt || !breed || !gender || !predictedWeight) {
       console.log('❌ 必須パラメータ不足:', { prompt: !!prompt, breed: !!breed, gender: !!gender, predictedWeight: !!predictedWeight });
@@ -55,6 +55,7 @@ export default async function handler(req, res) {
     const enhancedPrompt = `A realistic photo of an adult ${genderEn} ${breed} dog weighing approximately ${predictedWeight}kg, ${sizeInfo}standing next to a human person for size comparison, full body shot of both dog and human, high quality, professional photography. ${prompt}`;
     
     console.log('🎨 FLUX Kontext 画像生成開始:', { breed, gender, predictedWeight });
+    console.log('📸 参考画像数:', referenceImages ? referenceImages.length : 0);
     
     const headers = {
       "Authorization": `Bearer ${DATACRUNCH_API_KEY}`,
@@ -72,6 +73,15 @@ export default async function handler(req, res) {
         enable_base64_output: false
       }
     };
+    
+    // 参考画像が提供されている場合は追加（DataCrunch APIで対応している場合）
+    if (referenceImages && referenceImages.length > 0) {
+      console.log('📎 参考画像を追加中...');
+      // DataCrunch APIの仕様に合わせて参考画像を追加
+      // APIドキュメントで "reference_image" や "image" パラメータが使用可能かを確認
+      data.input.reference_image = referenceImages[0]; // 最初の画像を参考として使用
+      console.log('✅ 参考画像設定完了');
+    }
     
     console.log('🎯 送信データ:', JSON.stringify(data, null, 2));
     

@@ -54,8 +54,15 @@ export interface PredictionLog {
   current_weight: number;
   birth_weight?: number;
   past_weights?: { date: string; weight: number }[];
+  past_weight_1_date?: string;
+  past_weight_1_value?: number;
+  past_weight_2_date?: string;
+  past_weight_2_value?: number;
   mother_adult_weight?: number;
   father_adult_weight?: number;
+  current_weight_verified?: boolean;
+  mother_weight_verified?: boolean;
+  father_weight_verified?: boolean;
   
   // アウトプット情報（体重のみ）
   predicted_weight?: number;

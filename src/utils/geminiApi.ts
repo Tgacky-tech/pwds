@@ -20,10 +20,10 @@ export const predictDogGrowthWithGemini = async (formData: DogFormData): Promise
     // 1. 予測体重とアドバイスを生成
     const predictionData = await generatePredictionData(formData);
     
-    // 2. 画像生成用プロンプトを生成
-    const imagePrompt = await generateImagePrompt(formData, predictionData.predictedWeight, predictionData.predictedLength, predictionData.predictedHeight);
+    // 2. 画像生成用プロンプトを生成（テキストのみ）
+    const imagePrompt = await generateSimpleImagePrompt(formData, predictionData.predictedWeight, predictionData.predictedLength, predictionData.predictedHeight);
     
-    // 3. FLUX.1で画像を生成
+    // 3. FLUX.1で画像を生成（入力画像を参考画像として使用）
     console.log('🎨 FLUX.1画像生成開始...');
     const generatedImageUrl = await generateDogImage({
       prompt: imagePrompt,
@@ -31,7 +31,8 @@ export const predictDogGrowthWithGemini = async (formData: DogFormData): Promise
       gender: formData.gender === 'male' ? 'オス' : 'メス',
       predictedWeight: predictionData.predictedWeight,
       predictedLength: predictionData.predictedLength,
-      predictedHeight: predictionData.predictedHeight
+      predictedHeight: predictionData.predictedHeight,
+      referenceImages: formData.photos // 入力画像を参考画像として渡す
     });
     
     // 4. 体重評価を生成
@@ -120,7 +121,24 @@ async function generatePredictionData(formData: DogFormData) {
   }
 }
 
-// 画像生成用プロンプト生成（レート制限対応）
+// シンプルな画像プロンプト生成（入力画像を参考にするため特徴抽出は不要）
+async function generateSimpleImagePrompt(formData: DogFormData, predictedWeight: number, predictedLength: number, predictedHeight: number): Promise<string> {
+  const genderEn = formData.gender === 'male' ? 'male' : 'female';
+  const genderJa = formData.gender === 'male' ? 'オス' : 'メス';
+  
+  // サイズ情報
+  const sizeInfo = predictedLength && predictedHeight 
+    ? `body length ${predictedLength}cm, height ${predictedHeight}cm, `
+    : '';
+    
+  // 基本的なプロンプト（入力画像の特徴は参考画像から自動で取得される）
+  const prompt = `A realistic photo of an adult ${genderEn} ${formData.breed || 'mixed breed'} dog weighing approximately ${predictedWeight}kg, ${sizeInfo}standing next to a human person for size comparison, full body shot of both dog and human, high quality, professional photography, natural lighting, outdoor setting`;
+  
+  console.log('✅ シンプル画像プロンプト生成完了:', prompt);
+  return prompt;
+}
+
+// 画像生成用プロンプト生成（レート制限対応）- 廃止予定
 async function generateImagePrompt(formData: DogFormData, predictedWeight: number, predictedLength: number, predictedHeight: number): Promise<string> {
   // 子犬の画像から特徴を抽出
   const imageFeatures = await extractPuppyFeatures(formData);

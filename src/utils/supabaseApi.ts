@@ -34,10 +34,10 @@ export const savePredictionStart = async (
       birth_date: formData.birthDate,
       current_weight: Number(formData.currentWeight),
       birth_weight: formData.birthWeight ? Number(formData.birthWeight) : undefined,
-      past_weights: formData.pastWeights?.map(pw => ({
-        date: pw.date,
-        weight: Number(pw.weight)
-      })),
+      past_weight_1_date: formData.pastWeights?.[0]?.date || null,
+      past_weight_1_value: formData.pastWeights?.[0]?.weight ? Number(formData.pastWeights[0].weight) : null,
+      past_weight_2_date: formData.pastWeights?.[1]?.date || null,
+      past_weight_2_value: formData.pastWeights?.[1]?.weight ? Number(formData.pastWeights[1].weight) : null,
       mother_adult_weight: formData.motherAdultWeight ? Number(formData.motherAdultWeight) : undefined,
       father_adult_weight: formData.fatherAdultWeight ? Number(formData.fatherAdultWeight) : undefined,
       current_weight_verified: formData.currentWeightVerified || false,
@@ -46,6 +46,13 @@ export const savePredictionStart = async (
     };
     
     console.log('Log data prepared:', logData);
+    console.log('Past weights data:', {
+      pastWeights: formData.pastWeights,
+      past_weight_1_date: logData.past_weight_1_date,
+      past_weight_1_value: logData.past_weight_1_value,
+      past_weight_2_date: logData.past_weight_2_date,
+      past_weight_2_value: logData.past_weight_2_value
+    });
 
     const { data, error } = await supabase
       .from('prediction_logs')
@@ -61,10 +68,53 @@ export const savePredictionStart = async (
         details: error.details,
         hint: error.hint
       });
+      console.error('Failed logData:', logData);
+      
+      // カラムが存在しない場合の詳細エラー情報とフォールバック処理
+      if (error.message.includes('column') && error.message.includes('does not exist')) {
+        console.error('⚠️ データベースのカラムが存在しません。以下のマイグレーションを実行してください:');
+        console.error('-- 過去体重記録用カラム');
+        console.error('ALTER TABLE prediction_logs ADD COLUMN past_weight_1_date DATE;');
+        console.error('ALTER TABLE prediction_logs ADD COLUMN past_weight_1_value DECIMAL(5,2);');
+        console.error('ALTER TABLE prediction_logs ADD COLUMN past_weight_2_date DATE;');
+        console.error('ALTER TABLE prediction_logs ADD COLUMN past_weight_2_value DECIMAL(5,2);');
+        console.error('-- 体重確認フラグ用カラム');
+        console.error('ALTER TABLE prediction_logs ADD COLUMN current_weight_verified BOOLEAN DEFAULT false;');
+        console.error('ALTER TABLE prediction_logs ADD COLUMN mother_weight_verified BOOLEAN DEFAULT false;');
+        console.error('ALTER TABLE prediction_logs ADD COLUMN father_weight_verified BOOLEAN DEFAULT false;');
+        
+        // フォールバック: 新しいカラムを除いてリトライ
+        console.log('🔄 新しいカラムを除いてリトライ中...');
+        const fallbackData = { ...logData };
+        delete fallbackData.past_weight_1_date;
+        delete fallbackData.past_weight_1_value;
+        delete fallbackData.past_weight_2_date;
+        delete fallbackData.past_weight_2_value;
+        delete fallbackData.current_weight_verified;
+        delete fallbackData.mother_weight_verified;
+        delete fallbackData.father_weight_verified;
+        
+        const { data: fallbackResult, error: fallbackError } = await supabase
+          .from('prediction_logs')
+          .insert(fallbackData)
+          .select('id')
+          .single();
+          
+        if (fallbackError) {
+          console.error('❌ フォールバックも失敗:', fallbackError);
+          throw new Error(`フォールバック保存も失敗: ${fallbackError.message}`);
+        }
+        
+        console.log('✅ フォールバック保存成功, log ID:', fallbackResult.id);
+        return fallbackResult.id;
+      }
+      
       throw new Error(`データの保存に失敗しました: ${error.message}`);
     }
 
-    console.log('Prediction started, log ID:', data.id);
+    console.log('✅ Prediction started, log ID:', data.id);
+    console.log('✅ Log ID type:', typeof data.id);
+    console.log('✅ Log ID length:', data.id?.length);
     return data.id;
   } catch (error) {
     console.error('Save prediction start error:', error);
@@ -78,25 +128,61 @@ export const updatePredictionCompletion = async (
   predictedWeight: number
 ): Promise<void> => {
   try {
+    console.log('🔄 予測体重更新開始:', { id, predictedWeight });
+    
     const updateData = {
       predicted_weight: predictedWeight,
       prediction_completed_at: new Date().toISOString()
     };
+    
+    console.log('📝 更新データ:', updateData);
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('prediction_logs')
       .update(updateData)
-      .eq('id', id);
+      .eq('id', id)
+      .select('id, predicted_weight');
 
     if (error) {
-      console.error('Supabase update error:', error);
+      console.error('❌ Supabase update error:', error);
+      console.error('❌ Error details:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
       throw new Error('予測結果の保存に失敗しました');
     }
 
-    console.log('Prediction completed for log ID:', id);
+    console.log('✅ Prediction completed for log ID:', id);
+    console.log('✅ Updated data:', data);
   } catch (error) {
     console.error('Update prediction completion error:', error);
     throw error;
+  }
+};
+
+// 予測体重の保存確認
+export const verifyPredictionWeightSaved = async (id: string): Promise<{saved: boolean, value: number | null}> => {
+  try {
+    const { data, error } = await supabase
+      .from('prediction_logs')
+      .select('id, predicted_weight')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('Verification query error:', error);
+      return { saved: false, value: null };
+    }
+
+    const saved = data?.predicted_weight !== null && data?.predicted_weight !== undefined;
+    console.log('🔍 予測体重保存確認:', { id, predicted_weight: data?.predicted_weight, saved });
+    
+    return { saved, value: data?.predicted_weight || null };
+  } catch (error) {
+    console.error('Verification error:', error);
+    return { saved: false, value: null };
   }
 };
 

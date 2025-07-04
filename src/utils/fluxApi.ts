@@ -5,6 +5,7 @@ interface FluxGenerationInput {
   predictedWeight: number;
   predictedLength: number;
   predictedHeight: number;
+  referenceImages?: File[];
 }
 
 interface ApiResponse {
@@ -18,10 +19,22 @@ export const generateDogImage = async ({
   gender,
   predictedWeight,
   predictedLength,
-  predictedHeight
+  predictedHeight,
+  referenceImages
 }: FluxGenerationInput): Promise<string | null> => {
   try {
     console.log('🎨 FLUX.1 画像生成開始:', { breed, gender, predictedWeight, predictedLength, predictedHeight });
+    console.log('📸 参考画像数:', referenceImages?.length || 0);
+    
+    // 参考画像をBase64に変換
+    let referenceImagesBase64: string[] = [];
+    if (referenceImages && referenceImages.length > 0) {
+      console.log('🔄 参考画像をBase64に変換中...');
+      referenceImagesBase64 = await Promise.all(
+        referenceImages.map(file => fileToBase64(file))
+      );
+      console.log('✅ 参考画像変換完了:', referenceImagesBase64.length, '個');
+    }
     
     // FLUX.1 API経由で画像生成を試行
     console.log('🚀 実際のFLUX.1 API呼び出し開始...');
@@ -39,7 +52,8 @@ export const generateDogImage = async ({
           gender,
           predictedWeight,
           predictedLength,
-          predictedHeight
+          predictedHeight,
+          referenceImages: referenceImagesBase64
         })
       });
       
@@ -109,5 +123,20 @@ export const generateDogImage = async ({
     return '/default-dog.svg';
   }
 };
+
+// ファイルをBase64に変換するヘルパー関数
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // data:image/jpeg;base64, の部分を除去してBase64のみ抽出
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 export default generateDogImage;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DogFormData, PredictionResult, User } from './types';
 import { predictDogGrowthWithGemini } from './utils/geminiApi';
-import { savePredictionStart, updatePredictionCompletion, saveSatisfactionRating } from './utils/supabaseApi';
+import { savePredictionStart, updatePredictionCompletion, saveSatisfactionRating, verifyPredictionWeightSaved } from './utils/supabaseApi';
 import { saveDataWithFallback } from './utils/liffCompatibleApi';
 import { updateSatisfactionRating } from './utils/supabaseUpdate';
 import { logPredictionStart, logPredictionComplete, logSatisfactionRating } from './utils/analytics';
@@ -117,10 +117,26 @@ function App() {
       logPredictionComplete(predictionResult.predictedWeight, processingTime);
       
       // データベースに予測結果を保存
-      if (logId && logId.startsWith('supabase-')) {
+      console.log('🔍 予測体重保存処理開始:', { logId, predictedWeight: predictionResult.predictedWeight });
+      
+      if (logId) {
+        // logIdの形式を確認
+        const cleanLogId = logId.startsWith('supabase-') ? logId.replace('supabase-', '') : logId;
+        console.log('🔍 Clean log ID:', cleanLogId);
+        
         try {
-          await updatePredictionCompletion(logId.replace('supabase-', ''), predictionResult.predictedWeight);
+          await updatePredictionCompletion(cleanLogId, predictionResult.predictedWeight);
           console.log('✅ Prediction weight saved to database');
+          
+          // 保存確認
+          setTimeout(async () => {
+            const verification = await verifyPredictionWeightSaved(cleanLogId);
+            if (!verification.saved) {
+              console.warn('⚠️ 予測体重が正しく保存されていません');
+            } else {
+              console.log('✅ 予測体重保存確認完了:', verification.value);
+            }
+          }, 1000);
         } catch (dbError) {
           console.warn('Database prediction completion failed:', dbError);
           // フォールバック: ローカルストレージに保存
