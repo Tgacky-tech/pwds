@@ -40,6 +40,9 @@ export const savePredictionStart = async (
       })),
       mother_adult_weight: formData.motherAdultWeight ? Number(formData.motherAdultWeight) : undefined,
       father_adult_weight: formData.fatherAdultWeight ? Number(formData.fatherAdultWeight) : undefined,
+      current_weight_verified: formData.currentWeightVerified || false,
+      mother_weight_verified: formData.motherWeightVerified || false,
+      father_weight_verified: formData.fatherWeightVerified || false,
     };
     
     console.log('Log data prepared:', logData);
