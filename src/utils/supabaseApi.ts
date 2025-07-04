@@ -14,7 +14,7 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
   try {
     console.log('🔍 データベース接続テスト開始...');
     const { data, error } = await supabase
-      .from('prediction_logs')
+      .from('prediction_logs_v2')
       .select('id')
       .limit(1);
     
@@ -50,7 +50,7 @@ export const checkTableStructure = async (): Promise<void> => {
     
     // ドライランでカラムの存在確認
     const { error } = await supabase
-      .from('prediction_logs')
+      .from('prediction_logs_v2')
       .insert(testData)
       .select('id')
       .limit(0); // 実際には挿入しない
@@ -136,7 +136,7 @@ export const savePredictionStart = async (
 
     console.log('🚀 Supabaseへデータ挿入開始...');
     const { data, error } = await supabase
-      .from('prediction_logs')
+      .from('prediction_logs_v2')
       .insert(logData)
       .select('id, current_weight_verified, mother_weight_verified, father_weight_verified, past_weight_1_date, past_weight_1_value, past_weight_2_date, past_weight_2_value')
       .single();
@@ -198,7 +198,7 @@ export const savePredictionStart = async (
         delete fallbackData.father_weight_verified;
         
         const { data: fallbackResult, error: fallbackError } = await supabase
-          .from('prediction_logs')
+          .from('prediction_logs_v2')
           .insert(fallbackData)
           .select('id')
           .single();
@@ -251,7 +251,7 @@ export const updatePredictionCompletion = async (
     console.log('📝 使用するID:', id, '(type:', typeof id, ', length:', id.length, ')');
 
     const { data, error } = await supabase
-      .from('prediction_logs')
+      .from('prediction_logs_v2')
       .update(updateData)
       .eq('id', id)
       .select('id, predicted_weight');
@@ -287,7 +287,7 @@ export const updatePredictionCompletion = async (
           // XMLHttpRequestを使用（他の機能と同じ方法）
           await new Promise<void>((resolve, reject) => {
             const xhr = new XMLHttpRequest();
-            const baseUrl = `${supabaseUrl}/rest/v1/prediction_logs`;
+            const baseUrl = `${supabaseUrl}/rest/v1/prediction_logs_v2`;
             
             // JWTトークンをクリーンアップ（他の機能と同じ方法）
             const cleanApikey = supabaseKey.replace(/\s+/g, '').trim();
@@ -345,7 +345,7 @@ export const updatePredictionCompletion = async (
 export const verifyPredictionWeightSaved = async (id: string): Promise<{saved: boolean, value: number | null}> => {
   try {
     const { data, error } = await supabase
-      .from('prediction_logs')
+      .from('prediction_logs_v2')
       .select('id, predicted_weight')
       .eq('id', id)
       .single();
@@ -371,7 +371,7 @@ export const verifyAllDataSaved = async (id: string): Promise<void> => {
     console.log('🔍 全体データ保存確認開始:', id);
     
     const { data, error } = await supabase
-      .from('prediction_logs')
+      .from('prediction_logs_v2')
       .select(`
         id,
         current_weight_verified,
@@ -433,7 +433,7 @@ export const saveSatisfactionRating = async (
     };
 
     const { error } = await supabase
-      .from('prediction_logs')
+      .from('prediction_logs_v2')
       .update(updateData)
       .eq('id', id);
 
@@ -453,7 +453,7 @@ export const saveSatisfactionRating = async (
 export const getUserPredictionLogs = async (lineUserId: string): Promise<PredictionLog[]> => {
   try {
     const { data, error } = await supabase
-      .from('prediction_logs')
+      .from('prediction_logs_v2')
       .select('*')
       .eq('line_user_id', lineUserId)
       .order('prediction_started_at', { ascending: false });
@@ -474,7 +474,7 @@ export const getUserPredictionLogs = async (lineUserId: string): Promise<Predict
 export const getPredictionLogById = async (id: string): Promise<PredictionLog | null> => {
   try {
     const { data, error } = await supabase
-      .from('prediction_logs')
+      .from('prediction_logs_v2')
       .select('*')
       .eq('id', id)
       .single();

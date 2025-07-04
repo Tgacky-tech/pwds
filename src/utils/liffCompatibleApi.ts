@@ -5,7 +5,7 @@ export const sendToSupabaseLiff = async (data: any): Promise<string | null> => {
   return new Promise((resolve) => {
     try {
       const xhr = new XMLHttpRequest();
-      const baseUrl = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/prediction_logs`;
+      const baseUrl = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/prediction_logs_v2`;
       const apikey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
       // JWTトークンをクリーンアップ（改行文字等を除去）
