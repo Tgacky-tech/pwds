@@ -122,7 +122,9 @@ async function generatePredictionData(formData: DogFormData) {
 
 // 画像生成用プロンプト生成（レート制限対応）
 async function generateImagePrompt(formData: DogFormData, predictedWeight: number, predictedLength: number, predictedHeight: number): Promise<string> {
-  const prompt = createImagePromptGenerationPrompt(formData, predictedWeight, predictedLength, predictedHeight);
+  // 子犬の画像から特徴を抽出
+  const imageFeatures = await extractPuppyFeatures(formData);
+  const prompt = createImagePromptGenerationPrompt(formData, predictedWeight, predictedLength, predictedHeight, imageFeatures);
   
   // レート制限対応: 最大3回のリトライを実行
   for (let attempt = 1; attempt <= 3; attempt++) {
@@ -229,7 +231,7 @@ JSON形式で以下の情報を提供してください：
 }
 
 // 画像プロンプト生成用プロンプト作成
-function createImagePromptGenerationPrompt(formData: DogFormData, predictedWeight: number, predictedLength: number, predictedHeight: number): string {
+function createImagePromptGenerationPrompt(formData: DogFormData, predictedWeight: number, predictedLength: number, predictedHeight: number, imageFeatures?: string): string {
   return `
 犬種「${formData.breed}」の成犬時の画像を生成するための詳細なプロンプトを作成してください。
 
@@ -239,6 +241,7 @@ function createImagePromptGenerationPrompt(formData: DogFormData, predictedWeigh
 - 予測体重: ${predictedWeight}kg
 - 予測体長: ${predictedLength}cm (鼻先から尻尾の付け根まで)
 - 予測体高: ${predictedHeight}cm (地面から肩甲骨の頂点まで)
+${imageFeatures ? `- 子犬時の外見特徴: ${imageFeatures}` : ''}
 
 ## 要求事項
 - 画像生成AI（DALL-E、Midjourney等）用の英語プロンプトを作成
@@ -248,9 +251,94 @@ function createImagePromptGenerationPrompt(formData: DogFormData, predictedWeigh
 - 白背景
 - 高品質で自然な写真調
 - 予測された体長と体高の比率を正確に反映
+${imageFeatures ? '- 子犬時の毛色や模様などの外見特徴を成犬時に反映' : ''}
 
 プロンプトのみを出力してください（説明文は不要）。
 `;
+}
+
+// 子犬の画像から特徴を抽出する関数
+async function extractPuppyFeatures(formData: DogFormData): Promise<string> {
+  if (!formData.photos || formData.photos.length === 0) {
+    return '';
+  }
+
+  try {
+    // 最初の画像をBase64に変換
+    const imageFile = formData.photos[0];
+    const base64Image = await fileToBase64(imageFile);
+    
+    const prompt = `
+この子犬の写真を分析して、以下の外見特徴を簡潔に英語で記述してください：
+
+## 分析対象
+- 毛色（具体的な色名）
+- 毛の模様やマーキング
+- 耳の形状と色
+- 体の特徴的な部分の色分け
+
+## 出力形式
+英語で簡潔に特徴をカンマ区切りで記述してください。
+例: "golden coat, white chest marking, dark ears, brown eyes"
+
+特徴のみを出力してください（説明文は不要）。
+`;
+
+    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: prompt },
+            {
+              inline_data: {
+                mime_type: imageFile.type,
+                data: base64Image
+              }
+            }
+          ]
+        }],
+        generationConfig: {
+          temperature: 0.3,
+          topK: 20,
+          topP: 0.8,
+          maxOutputTokens: 100,
+        }
+      })
+    });
+
+    if (!response.ok) {
+      console.error('画像特徴抽出API失敗:', response.status);
+      return '';
+    }
+
+    const data: GeminiResponse = await response.json();
+    const features = data.candidates[0].content.parts[0].text.trim();
+    
+    console.log('抽出された画像特徴:', features);
+    return features;
+  } catch (error) {
+    console.error('画像特徴抽出エラー:', error);
+    return '';
+  }
+}
+
+// ファイルをBase64に変換するヘルパー関数
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // data:image/jpeg;base64, の部分を除去
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 // Gemini APIを使って適正体重範囲を取得
