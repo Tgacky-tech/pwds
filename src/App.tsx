@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DogFormData, PredictionResult, User } from './types';
 import { predictDogGrowthWithGemini } from './utils/geminiApi';
-import { savePredictionStart, updatePredictionCompletion, saveSatisfactionRating, verifyPredictionWeightSaved, testDatabaseConnection } from './utils/supabaseApi';
+import { savePredictionStart, updatePredictionCompletion, saveSatisfactionRating, verifyPredictionWeightSaved, verifyAllDataSaved, testDatabaseConnection } from './utils/supabaseApi';
 import { saveDataWithFallback } from './utils/liffCompatibleApi';
 import { updateSatisfactionRating } from './utils/supabaseUpdate';
 import { logPredictionStart, logPredictionComplete, logSatisfactionRating } from './utils/analytics';
@@ -102,6 +102,15 @@ function App() {
           logId = await savePredictionStart(data, user);
           setCurrentLogId(logId);
           console.log('✅ Prediction start data saved with ID:', logId);
+          
+          // 予測開始時データの保存確認（2秒後）
+          setTimeout(async () => {
+            try {
+              await verifyAllDataSaved(logId);
+            } catch (verifyError) {
+              console.error('❌ 予測開始データ確認エラー:', verifyError);
+            }
+          }, 2000);
         } catch (saveError) {
           console.warn('Prediction start save failed:', saveError);
           // フォールバックとして元の方法も試行
@@ -154,6 +163,9 @@ function App() {
               } else {
                 console.log('✅ 予測体重保存確認完了:', verification.value, 'kg');
               }
+              
+              // 全体データの最終確認
+              await verifyAllDataSaved(logId);
             } catch (verifyError) {
               console.error('❌ 予測体重保存確認エラー:', verifyError);
             }

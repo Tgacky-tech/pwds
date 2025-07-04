@@ -117,15 +117,36 @@ export const savePredictionStart = async (
       motherWeightVerified: logData.mother_weight_verified,
       fatherWeightVerified: logData.father_weight_verified
     });
+    
+    // フォームデータの元の値も確認
+    console.log('📋 フォームデータ元の値確認:', {
+      currentWeightVerified: formData.currentWeightVerified,
+      motherWeightVerified: formData.motherWeightVerified,
+      fatherWeightVerified: formData.fatherWeightVerified,
+      pastWeights: formData.pastWeights
+    });
 
     console.log('🚀 Supabaseへデータ挿入開始...');
     const { data, error } = await supabase
       .from('prediction_logs')
       .insert(logData)
-      .select('id')
+      .select('id, current_weight_verified, mother_weight_verified, father_weight_verified, past_weight_1_date, past_weight_1_value, past_weight_2_date, past_weight_2_value')
       .single();
     
     console.log('📥 Supabase挿入レスポンス:', { data, error });
+    
+    if (data) {
+      console.log('✅ 保存されたデータ確認:', {
+        id: data.id,
+        current_weight_verified: data.current_weight_verified,
+        mother_weight_verified: data.mother_weight_verified,
+        father_weight_verified: data.father_weight_verified,
+        past_weight_1_date: data.past_weight_1_date,
+        past_weight_1_value: data.past_weight_1_value,
+        past_weight_2_date: data.past_weight_2_date,
+        past_weight_2_value: data.past_weight_2_value
+      });
+    }
 
     if (error) {
       console.error('Supabase insert error:', error);
@@ -250,6 +271,62 @@ export const verifyPredictionWeightSaved = async (id: string): Promise<{saved: b
   } catch (error) {
     console.error('Verification error:', error);
     return { saved: false, value: null };
+  }
+};
+
+// 全体的なデータ保存確認関数
+export const verifyAllDataSaved = async (id: string): Promise<void> => {
+  try {
+    console.log('🔍 全体データ保存確認開始:', id);
+    
+    const { data, error } = await supabase
+      .from('prediction_logs')
+      .select(`
+        id,
+        current_weight_verified,
+        mother_weight_verified,
+        father_weight_verified,
+        past_weight_1_date,
+        past_weight_1_value,
+        past_weight_2_date,
+        past_weight_2_value,
+        predicted_weight,
+        prediction_completed_at
+      `)
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('❌ 全体データ確認エラー:', error);
+      return;
+    }
+
+    console.log('📊 保存されている全データ:', data);
+    
+    // チェックボックス状態の確認
+    const checkboxStatus = {
+      current_weight_verified: data.current_weight_verified,
+      mother_weight_verified: data.mother_weight_verified,
+      father_weight_verified: data.father_weight_verified
+    };
+    console.log('✅ チェックボックス状態:', checkboxStatus);
+    
+    // 過去体重記録の確認
+    const pastWeightsStatus = {
+      past_weight_1: data.past_weight_1_date ? `${data.past_weight_1_date}: ${data.past_weight_1_value}kg` : 'なし',
+      past_weight_2: data.past_weight_2_date ? `${data.past_weight_2_date}: ${data.past_weight_2_value}kg` : 'なし'
+    };
+    console.log('📈 過去体重記録:', pastWeightsStatus);
+    
+    // 予測体重の確認
+    const predictionStatus = {
+      predicted_weight: data.predicted_weight,
+      completed_at: data.prediction_completed_at
+    };
+    console.log('🎯 予測結果:', predictionStatus);
+    
+  } catch (error) {
+    console.error('❌ 全体データ確認エラー:', error);
   }
 };
 
