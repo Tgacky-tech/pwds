@@ -401,16 +401,16 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
                           </div>
                           <div className={`${category.items.length > 4 ? 'grid grid-cols-2 gap-4' : 'space-y-2'} text-sm`}>
                             {category.items.map((item, itemIndex) => (
-                              <div key={itemIndex} className={`flex justify-between py-1 border-b ${colors.border} min-w-0`}>
-                                <span className="flex-1 truncate pr-2">{item.name}</span>
-                                <span className="font-medium flex-shrink-0">{item.cost}</span>
+                              <div key={itemIndex} className={`flex justify-between items-start py-2 border-b ${colors.border} min-w-0 gap-3`}>
+                                <span className="flex-1 leading-relaxed break-words">{item.name}</span>
+                                <span className="font-medium flex-shrink-0 whitespace-nowrap">{item.cost}</span>
                               </div>
                             ))}
                           </div>
-                          {category.total && (
+                          {category.total && category.id !== 'medical' && (
                             <div className={`mt-3 pt-3 border-t ${colors.border}`}>
                               <div className={`flex justify-between font-semibold ${colors.text}`}>
-                                <span>{category.id === 'medical' ? '参考価格' : '合計目安'}</span>
+                                <span>合計目安</span>
                                 <span>{category.total}</span>
                               </div>
                             </div>
