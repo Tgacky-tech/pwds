@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DogFormData, PredictionResult, User } from './types';
 import { predictDogGrowthWithGemini } from './utils/geminiApi';
-// import { savePredictionStart, updatePredictionCompletion, saveSatisfactionRating } from './utils/supabaseApi';
+import { savePredictionStart, updatePredictionCompletion, saveSatisfactionRating } from './utils/supabaseApi';
 import { saveDataWithFallback } from './utils/liffCompatibleApi';
 import { updateSatisfactionRating } from './utils/supabaseUpdate';
 import { logPredictionStart, logPredictionComplete, logSatisfactionRating } from './utils/analytics';
@@ -116,8 +116,31 @@ function App() {
       const processingTime = Date.now() - startTime;
       logPredictionComplete(predictionResult.predictedWeight, processingTime);
       
-      // 予測完了データをローカルストレージに記録
-      if (logId) {
+      // データベースに予測結果を保存
+      if (logId && logId.startsWith('supabase-')) {
+        try {
+          await updatePredictionCompletion(logId.replace('supabase-', ''), predictionResult.predictedWeight);
+          console.log('✅ Prediction weight saved to database');
+        } catch (dbError) {
+          console.warn('Database prediction completion failed:', dbError);
+          // フォールバック: ローカルストレージに保存
+          try {
+            const completionData = {
+              id: logId,
+              predicted_weight: predictionResult.predictedWeight,
+              prediction_completed_at: new Date().toISOString(),
+              processing_time_ms: processingTime
+            };
+            const localCompletions = JSON.parse(localStorage.getItem('prediction_completions') || '[]');
+            localCompletions.push(completionData);
+            localStorage.setItem('prediction_completions', JSON.stringify(localCompletions));
+            console.log('✅ Prediction completion recorded locally as fallback');
+          } catch (localError) {
+            console.warn('Local completion storage also failed:', localError);
+          }
+        }
+      } else if (logId) {
+        // フォールバック保存の場合はローカルストレージのみ
         try {
           const completionData = {
             id: logId,
@@ -128,7 +151,7 @@ function App() {
           const localCompletions = JSON.parse(localStorage.getItem('prediction_completions') || '[]');
           localCompletions.push(completionData);
           localStorage.setItem('prediction_completions', JSON.stringify(localCompletions));
-          console.log('✅ Prediction completion recorded locally');
+          console.log('✅ Prediction completion recorded locally (fallback source)');
         } catch (localError) {
           console.warn('Local completion storage failed:', localError);
         }
