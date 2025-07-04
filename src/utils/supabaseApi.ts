@@ -99,9 +99,9 @@ export const savePredictionStart = async (
       past_weight_2_value: formData.pastWeights?.[1]?.weight ? Number(formData.pastWeights[1].weight) : null,
       mother_adult_weight: formData.motherAdultWeight ? Number(formData.motherAdultWeight) : undefined,
       father_adult_weight: formData.fatherAdultWeight ? Number(formData.fatherAdultWeight) : undefined,
-      current_weight_verified: formData.currentWeightVerified || false,
-      mother_weight_verified: formData.motherWeightVerified || false,
-      father_weight_verified: formData.fatherWeightVerified || false,
+      current_weight_verified: formData.currentWeightVerified,
+      mother_weight_verified: formData.motherWeightVerified,
+      father_weight_verified: formData.fatherWeightVerified,
     };
     
     console.log('📋 予測開始データ準備完了:', logData);
@@ -125,6 +125,14 @@ export const savePredictionStart = async (
       fatherWeightVerified: formData.fatherWeightVerified,
       pastWeights: formData.pastWeights
     });
+    
+    // has_purchase_experienceとの比較確認
+    console.log('🔍 保存方法比較:', {
+      has_purchase_experience: formData.hasPurchaseExperience,
+      current_weight_verified: formData.currentWeightVerified,
+      mother_weight_verified: formData.motherWeightVerified,
+      father_weight_verified: formData.fatherWeightVerified
+    });
 
     console.log('🚀 Supabaseへデータ挿入開始...');
     const { data, error } = await supabase
@@ -145,6 +153,13 @@ export const savePredictionStart = async (
         past_weight_1_value: data.past_weight_1_value,
         past_weight_2_date: data.past_weight_2_date,
         past_weight_2_value: data.past_weight_2_value
+      });
+      
+      // 体重確認フラグの型確認
+      console.log('📊 体重確認フラグの型と値:', {
+        current_weight_verified: { value: data.current_weight_verified, type: typeof data.current_weight_verified },
+        mother_weight_verified: { value: data.mother_weight_verified, type: typeof data.mother_weight_verified },
+        father_weight_verified: { value: data.father_weight_verified, type: typeof data.father_weight_verified }
       });
     }
 
