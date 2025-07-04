@@ -415,17 +415,18 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
                               </div>
                             </div>
                           )}
-                          {category.id === 'medical' && (
-                            <div className={`mt-3 pt-3 border-t ${colors.border}`}>
-                              <p className={`text-xs ${colors.text.replace('800', '700')}`}>
-                                ※ 病気や怪我の内容により費用は大きく変動します。ペット保険の加入をおすすめします。
-                              </p>
-                            </div>
-                          )}
                         </div>
                       );
                     })}
                   </div>
+                </div>
+              )}
+              {/* Cost simulation disclaimer */}
+              {openSections.cost && (
+                <div className="px-6 pb-4">
+                  <p className="text-xs text-gray-600">
+                    この費用シュミレーションはあくまで犬種等に基づく簡易的な目安を提示するものです。
+                  </p>
                 </div>
               )}
             </div>
