@@ -38,7 +38,19 @@ const FormScreen: React.FC<FormScreenProps> = ({ onSubmit }) => {
   );
 
   const handleInputChange = (field: keyof DogFormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    console.log('🔍 handleInputChange呼び出し:', { field, value, type: typeof value });
+    setFormData(prev => {
+      const newData = { ...prev, [field]: value };
+      console.log('🔍 フォームデータ更新後:', {
+        field,
+        oldValue: prev[field],
+        newValue: value,
+        currentWeightVerified: newData.currentWeightVerified,
+        motherWeightVerified: newData.motherWeightVerified,
+        fatherWeightVerified: newData.fatherWeightVerified
+      });
+      return newData;
+    });
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
@@ -90,6 +102,19 @@ const FormScreen: React.FC<FormScreenProps> = ({ onSubmit }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // チェックボックス値をフォーム送信前に確認
+    console.log('📋 フォーム送信前のチェックボックス状態確認:', {
+      currentWeightVerified: formData.currentWeightVerified,
+      motherWeightVerified: formData.motherWeightVerified,
+      fatherWeightVerified: formData.fatherWeightVerified,
+      type_current: typeof formData.currentWeightVerified,
+      type_mother: typeof formData.motherWeightVerified,
+      type_father: typeof formData.fatherWeightVerified
+    });
+    
+    console.log('📋 送信するフォームデータ全体:', formData);
+    
     const validationErrors = validateForm(formData, showAccuracySection);
     
     if (hasErrors(validationErrors)) {
@@ -102,6 +127,7 @@ const FormScreen: React.FC<FormScreenProps> = ({ onSubmit }) => {
       return;
     }
 
+    console.log('✅ バリデーション成功、onSubmitに渡します');
     onSubmit(formData);
   };
 
