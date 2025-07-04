@@ -378,7 +378,7 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
               </button>
               {openSections.cost && (
                 <div className="px-6 py-4 border-t border-gray-200">
-                  <div className="space-y-6">
+                  <div className="space-y-6 max-w-4xl mx-auto">
                     {result.costSimulation.categories.map((category, index) => {
                       const colorClasses = [
                         { bg: "bg-purple-50", text: "text-purple-800", border: "border-purple-200", button: "bg-purple-600" },
@@ -389,7 +389,7 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
                       const colors = colorClasses[index % colorClasses.length];
                       
                       return (
-                        <div key={category.id} className={`${colors.bg} rounded-lg p-4`}>
+                        <div key={category.id} className={`${colors.bg} rounded-lg p-6`}>
                           <h4 className={`font-semibold ${colors.text} mb-3 flex items-center`}>
                             <span className={`w-6 h-6 ${colors.button} text-white rounded-full flex items-center justify-center text-sm mr-2`}>
                               {category.icon}
@@ -399,11 +399,11 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
                           <div className={`text-sm ${colors.text.replace('800', '700')} mb-3`}>
                             {category.description}
                           </div>
-                          <div className={`${category.items.length > 4 ? 'grid grid-cols-2 gap-3' : 'space-y-2'} text-sm`}>
+                          <div className={`${category.items.length > 4 ? 'grid grid-cols-2 gap-4' : 'space-y-2'} text-sm`}>
                             {category.items.map((item, itemIndex) => (
-                              <div key={itemIndex} className={`flex justify-between py-1 border-b ${colors.border}`}>
-                                <span>{item.name}</span>
-                                <span className="font-medium">{item.cost}</span>
+                              <div key={itemIndex} className={`flex justify-between py-1 border-b ${colors.border} min-w-0`}>
+                                <span className="flex-1 truncate pr-2">{item.name}</span>
+                                <span className="font-medium flex-shrink-0">{item.cost}</span>
                               </div>
                             ))}
                           </div>
