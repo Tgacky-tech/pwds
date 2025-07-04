@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { DogFormData, PredictionResult, User } from './types';
 import { predictDogGrowthWithGemini } from './utils/geminiApi';
 import { savePredictionStart, updatePredictionCompletion, saveSatisfactionRating, verifyPredictionWeightSaved, verifyAllDataSaved, testDatabaseConnection } from './utils/supabaseApi';
+import { saveDataReliably, updatePredictedWeightReliably, updateSatisfactionReliably, verifyDataSaved } from './utils/reliableSupabaseApi';
 import { saveDataWithFallback } from './utils/liffCompatibleApi';
-import { updateSatisfactionRating } from './utils/supabaseUpdate';
 import { logPredictionStart, logPredictionComplete, logSatisfactionRating } from './utils/analytics';
 import './utils/dataExport'; // データエクスポート機能を初期化
 import { startDataMonitoring } from './utils/dataSync';
@@ -90,23 +90,33 @@ function App() {
           console.error('❌ データベース接続失敗。保存をスキップします。');
         }
         
-        // Supabase直接でデータ保存（チェックボックス状態と過去体重記録を含む）
+        // 確実なデータ保存方法を使用
         try {
-          console.log('🔄 予測開始時データ保存開始:', {
+          console.log('🔄 確実な予測開始時データ保存開始:', {
             currentWeightVerified: data.currentWeightVerified,
             motherWeightVerified: data.motherWeightVerified,
             fatherWeightVerified: data.fatherWeightVerified,
             pastWeights: data.pastWeights
           });
           
-          logId = await savePredictionStart(data, user);
+          logId = await saveDataReliably(data, user);
           setCurrentLogId(logId);
-          console.log('✅ Prediction start data saved with ID:', logId);
+          console.log('✅ Reliable prediction start data saved with ID:', logId);
           
           // 予測開始時データの保存確認（2秒後）
           setTimeout(async () => {
             try {
-              await verifyAllDataSaved(logId);
+              const savedData = await verifyDataSaved(logId);
+              console.log('📊 保存確認結果:', {
+                id: savedData?.id,
+                current_weight_verified: savedData?.current_weight_verified,
+                mother_weight_verified: savedData?.mother_weight_verified,
+                father_weight_verified: savedData?.father_weight_verified,
+                past_weight_1_date: savedData?.past_weight_1_date,
+                past_weight_1_value: savedData?.past_weight_1_value,
+                past_weight_2_date: savedData?.past_weight_2_date,
+                past_weight_2_value: savedData?.past_weight_2_value
+              });
             } catch (verifyError) {
               console.error('❌ 予測開始データ確認エラー:', verifyError);
             }
@@ -149,23 +159,29 @@ function App() {
       
       if (logId) {
         try {
-          console.log('🔄 予測体重をデータベースに保存中...');
-          await updatePredictionCompletion(logId, predictionResult.predictedWeight);
-          console.log('✅ Prediction weight saved to database successfully');
+          console.log('🔄 確実な方法で予測体重をデータベースに保存中...');
+          await updatePredictedWeightReliably(logId, predictionResult.predictedWeight);
+          console.log('✅ Reliable prediction weight saved to database successfully');
           
           // 保存確認（1秒後）
           setTimeout(async () => {
             try {
-              const verification = await verifyPredictionWeightSaved(logId);
-              if (!verification.saved) {
+              const savedData = await verifyDataSaved(logId);
+              if (!savedData?.predicted_weight) {
                 console.warn('⚠️ 予測体重が正しく保存されていません');
                 console.warn('⚠️ データベースのpredicted_weightカラムを確認してください');
               } else {
-                console.log('✅ 予測体重保存確認完了:', verification.value, 'kg');
+                console.log('✅ 予測体重保存確認完了:', savedData.predicted_weight, 'kg');
               }
               
               // 全体データの最終確認
-              await verifyAllDataSaved(logId);
+              console.log('📊 最終データ確認:', {
+                predicted_weight: savedData?.predicted_weight,
+                prediction_completed_at: savedData?.prediction_completed_at,
+                current_weight_verified: savedData?.current_weight_verified,
+                mother_weight_verified: savedData?.mother_weight_verified,
+                father_weight_verified: savedData?.father_weight_verified
+              });
             } catch (verifyError) {
               console.error('❌ 予測体重保存確認エラー:', verifyError);
             }
@@ -228,17 +244,26 @@ function App() {
     logSatisfactionRating(rating);
     console.log('Satisfaction rating recorded:', rating);
     
-    // Supabaseデータベースに満足度評価を更新
+    // 確実な方法でSupabaseデータベースに満足度評価を更新
     if (currentLogId && !currentLogId.startsWith('local-') && !currentLogId.startsWith('line-') && !currentLogId.startsWith('sheets-')) {
       try {
-        const success = await updateSatisfactionRating(currentLogId, rating);
-        if (success) {
-          console.log('✅ Satisfaction rating updated in Supabase');
-        } else {
-          console.warn('❌ Failed to update satisfaction rating in Supabase');
-        }
+        await updateSatisfactionReliably(currentLogId, rating);
+        console.log('✅ Reliable satisfaction rating updated in Supabase');
+        
+        // 保存確認
+        setTimeout(async () => {
+          try {
+            const savedData = await verifyDataSaved(currentLogId);
+            console.log('📊 満足度評価保存確認:', {
+              satisfaction_rating: savedData?.satisfaction_rating,
+              satisfaction_rated_at: savedData?.satisfaction_rated_at
+            });
+          } catch (verifyError) {
+            console.error('❌ 満足度評価確認エラー:', verifyError);
+          }
+        }, 1000);
       } catch (updateError) {
-        console.warn('❌ Satisfaction rating update error:', updateError);
+        console.warn('❌ Reliable satisfaction rating update error:', updateError);
       }
     }
     
@@ -260,21 +285,13 @@ function App() {
     }
   };
 
-  const handleShowTerms = () => {
-    setCurrentState('terms');
-  };
-
-  const handleShowPrivacy = () => {
-    setCurrentState('privacy');
-  };
-
   const handleBackToLogin = () => {
     setCurrentState('login');
   };
 
   // Handle navigation for terms and privacy links
   React.useEffect(() => {
-    const handleNavigation = (e: PopStateEvent) => {
+    const handleNavigation = () => {
       const path = window.location.pathname;
       if (path === '/terms') {
         setCurrentState('terms');
