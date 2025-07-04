@@ -27,11 +27,11 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
     
     const getGradeColor = (grade: string) => {
       switch (grade) {
-        case 'A': return 'bg-green-500';
-        case 'B': return 'bg-blue-500';
-        case 'C': return 'bg-yellow-500';
-        case 'D': return 'bg-orange-500';
-        case 'E': return 'bg-red-500';
+        case 'A': return 'bg-red-500';    // 痩せすぎ
+        case 'B': return 'bg-orange-500'; // やや痩せ気味
+        case 'C': return 'bg-green-500';  // 適正範囲内
+        case 'D': return 'bg-orange-500'; // やや重め
+        case 'E': return 'bg-red-500';    // 太り気味
         default: return 'bg-gray-500';
       }
     };
@@ -63,32 +63,32 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
             </div>
           </div>
           <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>E</span>
             <span>A</span>
+            <span>C</span>
             <span>E</span>
           </div>
         </div>
 
         <div className="grid grid-cols-5 gap-1 text-center text-xs">
           <div className="p-2 bg-red-50 rounded">
-            <div className="font-semibold text-red-700">E</div>
+            <div className="font-semibold text-red-700">A</div>
             <div className="text-red-600">痩せすぎ</div>
           </div>
           <div className="p-2 bg-orange-50 rounded">
-            <div className="font-semibold text-orange-700">D</div>
-            <div className="text-orange-600">やや痩せ</div>
+            <div className="font-semibold text-orange-700">B</div>
+            <div className="text-orange-600">やや痩せ気味</div>
           </div>
           <div className="p-2 bg-green-50 rounded">
-            <div className="font-semibold text-green-700">A</div>
-            <div className="text-green-600">理想的</div>
+            <div className="font-semibold text-green-700">C</div>
+            <div className="text-green-600">適正範囲内</div>
           </div>
           <div className="p-2 bg-orange-50 rounded">
             <div className="font-semibold text-orange-700">D</div>
-            <div className="text-orange-600">やや太り</div>
+            <div className="text-orange-600">やや重め</div>
           </div>
           <div className="p-2 bg-red-50 rounded">
             <div className="font-semibold text-red-700">E</div>
-            <div className="text-red-600">太りすぎ</div>
+            <div className="text-red-600">太り気味</div>
           </div>
         </div>
       </div>
