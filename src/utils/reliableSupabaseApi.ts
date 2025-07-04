@@ -39,7 +39,7 @@ export const saveDataReliably = async (formData: any, user: any): Promise<string
   
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    const url = `${SUPABASE_URL}/rest/v1/prediction_logs_v2`;
+    const url = `${SUPABASE_URL}/rest/v1/prediction_logs`;
     
     xhr.open('POST', url, true);
     xhr.setRequestHeader('Content-Type', 'application/json');
@@ -88,7 +88,7 @@ export const updatePredictedWeightReliably = async (id: string, predictedWeight:
   
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    const url = `${SUPABASE_URL}/rest/v1/prediction_logs_v2?id=eq.${id}`;
+    const url = `${SUPABASE_URL}/rest/v1/prediction_logs?id=eq.${id}`;
     
     xhr.open('PATCH', url, true);
     xhr.setRequestHeader('Content-Type', 'application/json');
@@ -130,7 +130,7 @@ export const updateSatisfactionReliably = async (id: string, rating: 'yes' | 'no
   
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    const url = `${SUPABASE_URL}/rest/v1/prediction_logs_v2?id=eq.${id}`;
+    const url = `${SUPABASE_URL}/rest/v1/prediction_logs?id=eq.${id}`;
     
     xhr.open('PATCH', url, true);
     xhr.setRequestHeader('Content-Type', 'application/json');
@@ -167,7 +167,7 @@ export const verifyDataSaved = async (id: string): Promise<any> => {
   
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    const url = `${SUPABASE_URL}/rest/v1/prediction_logs_v2?id=eq.${id}&select=*`;
+    const url = `${SUPABASE_URL}/rest/v1/prediction_logs?id=eq.${id}&select=*`;
     
     xhr.open('GET', url, true);
     xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);

@@ -7,7 +7,7 @@ export const updateSatisfactionRating = async (
   return new Promise((resolve) => {
     try {
       const xhr = new XMLHttpRequest();
-      const baseUrl = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/prediction_logs_v2`;
+      const baseUrl = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/prediction_logs`;
       const apikey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
       // JWTトークンをクリーンアップ
