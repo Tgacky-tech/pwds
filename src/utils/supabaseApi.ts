@@ -269,33 +269,60 @@ export const updatePredictionCompletion = async (
       if (error.message && error.message.includes('Headers')) {
         console.log('🔄 ヘッダーエラーを検出、REST APIで直接更新を試行...');
         try {
-          // 環境変数を安全に取得
+          // 環境変数を安全に取得（他の部分と同じAPIキーを使用）
           const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.replace(/[\x00-\x1F\x7F-\x9F]/g, '').trim();
           const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.replace(/[\x00-\x1F\x7F-\x9F]/g, '').trim();
+          
+          console.log('🔍 REST API用の環境変数確認:', {
+            url_length: supabaseUrl?.length || 0,
+            key_length: supabaseKey?.length || 0,
+            url_starts_with_https: supabaseUrl?.startsWith('https://'),
+            key_is_valid_length: (supabaseKey?.length || 0) > 50
+          });
           
           if (!supabaseUrl || !supabaseKey) {
             throw new Error('環境変数が無効です');
           }
           
-          // REST APIを直接呼び出し
-          const response = await fetch(`${supabaseUrl}/rest/v1/prediction_logs?id=eq.${id}`, {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': supabaseKey,
-              'Authorization': `Bearer ${supabaseKey}`,
-              'Prefer': 'return=representation'
-            },
-            body: JSON.stringify(updateData)
+          // XMLHttpRequestを使用（他の機能と同じ方法）
+          await new Promise<void>((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            const baseUrl = `${supabaseUrl}/rest/v1/prediction_logs`;
+            
+            // JWTトークンをクリーンアップ（他の機能と同じ方法）
+            const cleanApikey = supabaseKey.replace(/\s+/g, '').trim();
+            
+            xhr.open('PATCH', `${baseUrl}?id=eq.${id}`, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.setRequestHeader('apikey', cleanApikey);
+            xhr.setRequestHeader('Authorization', `Bearer ${cleanApikey}`);
+            xhr.setRequestHeader('Prefer', 'return=representation');
+            
+            xhr.onreadystatechange = function() {
+              if (xhr.readyState === 4) {
+                if (xhr.status === 200 || xhr.status === 204) {
+                  try {
+                    const response = xhr.responseText ? JSON.parse(xhr.responseText) : {};
+                    console.log('✅ XMLHttpRequestでの予測体重更新成功:', response);
+                    resolve();
+                  } catch (parseError) {
+                    console.log('✅ XMLHttpRequestでの予測体重更新成功（レスポンス解析不要）');
+                    resolve();
+                  }
+                } else {
+                  console.error('❌ XMLHttpRequest失敗:', xhr.status, xhr.responseText);
+                  reject(new Error(`XMLHttpRequest error: ${xhr.status} ${xhr.responseText}`));
+                }
+              }
+            };
+            
+            xhr.onerror = function() {
+              reject(new Error('XMLHttpRequestネットワークエラー'));
+            };
+            
+            xhr.send(JSON.stringify(updateData));
           });
           
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`REST API error: ${response.status} ${errorText}`);
-          }
-          
-          const retryData = await response.json();
-          console.log('✅ REST API直接呼び出しでの更新成功:', retryData);
           return;
         } catch (retryError) {
           console.error('❌ REST API直接呼び出しも失敗:', retryError);
