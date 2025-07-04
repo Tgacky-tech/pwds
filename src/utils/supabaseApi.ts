@@ -233,12 +233,22 @@ export const updatePredictionCompletion = async (
   try {
     console.log('🔄 予測体重更新開始:', { id, predictedWeight });
     
+    // 入力値の検証
+    if (!id || typeof id !== 'string') {
+      throw new Error(`Invalid id: ${id}`);
+    }
+    
+    if (typeof predictedWeight !== 'number' || isNaN(predictedWeight) || predictedWeight <= 0) {
+      throw new Error(`Invalid predicted weight: ${predictedWeight}`);
+    }
+    
     const updateData = {
-      predicted_weight: predictedWeight,
+      predicted_weight: Number(predictedWeight.toFixed(2)), // 小数点以下2桁に丸める
       prediction_completed_at: new Date().toISOString()
     };
     
     console.log('📝 更新データ:', updateData);
+    console.log('📝 使用するID:', id, '(type:', typeof id, ', length:', id.length, ')');
 
     const { data, error } = await supabase
       .from('prediction_logs')
@@ -254,7 +264,36 @@ export const updatePredictionCompletion = async (
         details: error.details,
         hint: error.hint
       });
-      throw new Error('予測結果の保存に失敗しました');
+      
+      // ヘッダーエラーの場合、シンプルなクライアントを試行
+      if (error.message && error.message.includes('Headers')) {
+        console.log('🔄 ヘッダーエラーを検出、シンプルなSupabaseクライアントで再試行...');
+        try {
+          const { createClient } = await import('@supabase/supabase-js');
+          const simpleSupabase = createClient(
+            import.meta.env.VITE_SUPABASE_URL,
+            import.meta.env.VITE_SUPABASE_ANON_KEY
+          );
+          
+          const { data: retryData, error: retryError } = await simpleSupabase
+            .from('prediction_logs')
+            .update(updateData)
+            .eq('id', id)
+            .select('id, predicted_weight');
+            
+          if (retryError) {
+            throw retryError;
+          }
+          
+          console.log('✅ シンプルクライアントでの更新成功:', retryData);
+          return;
+        } catch (retryError) {
+          console.error('❌ シンプルクライアントでも失敗:', retryError);
+          throw new Error('予測結果の保存に失敗しました（ヘッダーエラー）');
+        }
+      }
+      
+      throw new Error(`予測結果の保存に失敗しました: ${error.message}`);
     }
 
     console.log('✅ Prediction completed for log ID:', id);

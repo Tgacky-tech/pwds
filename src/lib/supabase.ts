@@ -20,17 +20,49 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   global: {
     headers: {},
     fetch: (url, options = {}) => {
-      // LIFF環境用のfetchカスタマイズ
-      const customOptions = {
-        ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': supabaseAnonKey,
-          'Authorization': `Bearer ${supabaseAnonKey}`,
-          ...options.headers,
-        },
-      };
-      return fetch(url, customOptions);
+      // 環境変数の値を検証
+      if (!supabaseAnonKey || typeof supabaseAnonKey !== 'string' || supabaseAnonKey.length === 0) {
+        console.error('❌ Invalid supabaseAnonKey:', supabaseAnonKey);
+        return fetch(url, options); // デフォルトのfetchを使用
+      }
+
+      // ヘッダーの値を安全に設定
+      const safeHeaders = {};
+      
+      try {
+        // 既存のヘッダーをコピー
+        if (options.headers) {
+          Object.assign(safeHeaders, options.headers);
+        }
+        
+        // Content-Typeを安全に設定
+        if (!safeHeaders['Content-Type']) {
+          safeHeaders['Content-Type'] = 'application/json';
+        }
+        
+        // APIキーを安全に設定
+        if (!safeHeaders['apikey']) {
+          safeHeaders['apikey'] = supabaseAnonKey;
+        }
+        
+        // Authorizationヘッダーを安全に設定
+        if (!safeHeaders['Authorization']) {
+          safeHeaders['Authorization'] = `Bearer ${supabaseAnonKey}`;
+        }
+        
+        const customOptions = {
+          ...options,
+          headers: safeHeaders,
+        };
+        
+        console.log('🔍 Supabase fetch headers:', Object.keys(safeHeaders));
+        return fetch(url, customOptions);
+        
+      } catch (headerError) {
+        console.error('❌ Header設定エラー:', headerError);
+        // エラー時はデフォルトのfetchを使用
+        return fetch(url, options);
+      }
     },
   },
 });
