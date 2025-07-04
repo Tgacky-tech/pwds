@@ -51,7 +51,7 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
           <div className="flex justify-between text-xs text-gray-500 mb-2">
             <span>痩せすぎ</span>
             <span>理想的</span>
-            <span>太りすぎ</span>
+            <span>太り気味</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-6 relative">
             <div className="bg-gradient-to-r from-red-400 via-green-400 to-red-400 h-6 rounded-full"></div>
