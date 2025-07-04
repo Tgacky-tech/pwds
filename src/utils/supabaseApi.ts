@@ -9,6 +9,65 @@ const sanitizeString = (str: string): string => {
   return str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim();
 };
 
+// データベース接続テスト関数
+export const testDatabaseConnection = async (): Promise<boolean> => {
+  try {
+    console.log('🔍 データベース接続テスト開始...');
+    const { data, error } = await supabase
+      .from('prediction_logs')
+      .select('id')
+      .limit(1);
+    
+    if (error) {
+      console.error('❌ データベース接続テスト失敗:', error);
+      return false;
+    }
+    
+    console.log('✅ データベース接続テスト成功:', data?.length || 0, '件取得');
+    return true;
+  } catch (error) {
+    console.error('❌ データベース接続テストエラー:', error);
+    return false;
+  }
+};
+
+// テーブル構造確認関数（デバッグ用）
+export const checkTableStructure = async (): Promise<void> => {
+  try {
+    console.log('🔍 テーブル構造確認開始...');
+    
+    // 空のレコードでテスト挿入を試行（実際には挿入しない）
+    const testData = {
+      line_user_id: 'test',
+      display_name: 'test',
+      purchase_source: 'petshop',
+      has_purchase_experience: 'yes',
+      breed: 'test',
+      gender: 'male',
+      birth_date: '2024-01-01',
+      current_weight: 1.0
+    };
+    
+    // ドライランでカラムの存在確認
+    const { error } = await supabase
+      .from('prediction_logs')
+      .insert(testData)
+      .select('id')
+      .limit(0); // 実際には挿入しない
+    
+    if (error) {
+      console.error('🔍 テーブル構造チェック結果:', error.message);
+      if (error.message.includes('column') && error.message.includes('does not exist')) {
+        console.error('❌ 必要なカラムが存在しません。マイグレーションが必要です。');
+      }
+    } else {
+      console.log('✅ 基本的なテーブル構造は問題ありません');
+    }
+  } catch (error) {
+    console.error('❌ テーブル構造確認エラー:', error);
+  }
+};
+
 export const savePredictionStart = async (
   formData: DogFormData,
   user: User
@@ -45,20 +104,28 @@ export const savePredictionStart = async (
       father_weight_verified: formData.fatherWeightVerified || false,
     };
     
-    console.log('Log data prepared:', logData);
-    console.log('Past weights data:', {
-      pastWeights: formData.pastWeights,
+    console.log('📋 予測開始データ準備完了:', logData);
+    console.log('📊 過去体重データ詳細:', {
+      originalPastWeights: formData.pastWeights,
       past_weight_1_date: logData.past_weight_1_date,
       past_weight_1_value: logData.past_weight_1_value,
       past_weight_2_date: logData.past_weight_2_date,
       past_weight_2_value: logData.past_weight_2_value
     });
+    console.log('✅ 体重確認フラグ詳細:', {
+      currentWeightVerified: logData.current_weight_verified,
+      motherWeightVerified: logData.mother_weight_verified,
+      fatherWeightVerified: logData.father_weight_verified
+    });
 
+    console.log('🚀 Supabaseへデータ挿入開始...');
     const { data, error } = await supabase
       .from('prediction_logs')
       .insert(logData)
       .select('id')
       .single();
+    
+    console.log('📥 Supabase挿入レスポンス:', { data, error });
 
     if (error) {
       console.error('Supabase insert error:', error);

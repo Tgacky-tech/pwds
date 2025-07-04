@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DogFormData, PredictionResult, User } from './types';
 import { predictDogGrowthWithGemini } from './utils/geminiApi';
-import { savePredictionStart, updatePredictionCompletion, saveSatisfactionRating, verifyPredictionWeightSaved } from './utils/supabaseApi';
+import { savePredictionStart, updatePredictionCompletion, saveSatisfactionRating, verifyPredictionWeightSaved, testDatabaseConnection } from './utils/supabaseApi';
 import { saveDataWithFallback } from './utils/liffCompatibleApi';
 import { updateSatisfactionRating } from './utils/supabaseUpdate';
 import { logPredictionStart, logPredictionComplete, logSatisfactionRating } from './utils/analytics';
@@ -84,28 +84,47 @@ function App() {
       if (user) {
         logPredictionStart(data, user);
         
-        // LIFF互換API経由でデータ保存を試行
+        // データベース接続テスト実行
+        const dbConnected = await testDatabaseConnection();
+        if (!dbConnected) {
+          console.error('❌ データベース接続失敗。保存をスキップします。');
+        }
+        
+        // Supabase直接でデータ保存（チェックボックス状態と過去体重記録を含む）
         try {
-          const logData = {
-            line_user_id: user.lineUserId,
-            display_name: user.displayName,
-            purchase_source: data.purchaseSource,
-            has_purchase_experience: data.hasPurchaseExperience,
-            breed: data.breed,
-            gender: data.gender,
-            birth_date: data.birthDate,
-            current_weight: Number(data.currentWeight),
-            birth_weight: data.birthWeight ? Number(data.birthWeight) : null,
-            mother_adult_weight: data.motherAdultWeight ? Number(data.motherAdultWeight) : null,
-            father_adult_weight: data.fatherAdultWeight ? Number(data.fatherAdultWeight) : null,
-          };
-          logId = await saveDataWithFallback(logData);
+          console.log('🔄 予測開始時データ保存開始:', {
+            currentWeightVerified: data.currentWeightVerified,
+            motherWeightVerified: data.motherWeightVerified,
+            fatherWeightVerified: data.fatherWeightVerified,
+            pastWeights: data.pastWeights
+          });
+          
+          logId = await savePredictionStart(data, user);
           setCurrentLogId(logId);
-          if (logId) {
-            console.log('✅ Data saved successfully with ID:', logId);
-          }
+          console.log('✅ Prediction start data saved with ID:', logId);
         } catch (saveError) {
-          console.warn('All save methods failed:', saveError);
+          console.warn('Prediction start save failed:', saveError);
+          // フォールバックとして元の方法も試行
+          try {
+            const basicLogData = {
+              line_user_id: user.lineUserId,
+              display_name: user.displayName,
+              purchase_source: data.purchaseSource,
+              has_purchase_experience: data.hasPurchaseExperience,
+              breed: data.breed,
+              gender: data.gender,
+              birth_date: data.birthDate,
+              current_weight: Number(data.currentWeight),
+              birth_weight: data.birthWeight ? Number(data.birthWeight) : null,
+              mother_adult_weight: data.motherAdultWeight ? Number(data.motherAdultWeight) : null,
+              father_adult_weight: data.fatherAdultWeight ? Number(data.fatherAdultWeight) : null,
+            };
+            logId = await saveDataWithFallback(basicLogData);
+            setCurrentLogId(logId);
+            console.log('✅ Fallback data saved with ID:', logId);
+          } catch (fallbackError) {
+            console.error('All save methods failed:', fallbackError);
+          }
         }
       }
 
@@ -120,21 +139,23 @@ function App() {
       console.log('🔍 予測体重保存処理開始:', { logId, predictedWeight: predictionResult.predictedWeight });
       
       if (logId) {
-        // logIdの形式を確認
-        const cleanLogId = logId.startsWith('supabase-') ? logId.replace('supabase-', '') : logId;
-        console.log('🔍 Clean log ID:', cleanLogId);
-        
         try {
-          await updatePredictionCompletion(cleanLogId, predictionResult.predictedWeight);
-          console.log('✅ Prediction weight saved to database');
+          console.log('🔄 予測体重をデータベースに保存中...');
+          await updatePredictionCompletion(logId, predictionResult.predictedWeight);
+          console.log('✅ Prediction weight saved to database successfully');
           
-          // 保存確認
+          // 保存確認（1秒後）
           setTimeout(async () => {
-            const verification = await verifyPredictionWeightSaved(cleanLogId);
-            if (!verification.saved) {
-              console.warn('⚠️ 予測体重が正しく保存されていません');
-            } else {
-              console.log('✅ 予測体重保存確認完了:', verification.value);
+            try {
+              const verification = await verifyPredictionWeightSaved(logId);
+              if (!verification.saved) {
+                console.warn('⚠️ 予測体重が正しく保存されていません');
+                console.warn('⚠️ データベースのpredicted_weightカラムを確認してください');
+              } else {
+                console.log('✅ 予測体重保存確認完了:', verification.value, 'kg');
+              }
+            } catch (verifyError) {
+              console.error('❌ 予測体重保存確認エラー:', verifyError);
             }
           }, 1000);
         } catch (dbError) {
