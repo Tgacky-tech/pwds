@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DogFormData, PredictionResult, User } from './types';
 import { predictDogGrowthWithGemini } from './utils/geminiApi';
 import { savePredictionStart, updatePredictionCompletion, saveSatisfactionRating, verifyPredictionWeightSaved, verifyAllDataSaved, testDatabaseConnection } from './utils/supabaseApi';
-import { saveDataReliably, updatePredictedWeightReliably, updateSatisfactionReliably, verifyDataSaved } from './utils/reliableSupabaseApi';
+import { saveDataReliably, updateSatisfactionReliably, verifyDataSaved } from './utils/reliableSupabaseApi';
 import { saveDataWithFallback } from './utils/liffCompatibleApi';
 import { logPredictionStart, logPredictionComplete, logSatisfactionRating } from './utils/analytics';
 import './utils/dataExport'; // データエクスポート機能を初期化
@@ -154,69 +154,24 @@ function App() {
       const processingTime = Date.now() - startTime;
       logPredictionComplete(predictionResult.predictedWeight, processingTime);
       
-      // データベースに予測結果を保存
-      console.log('🔍 予測体重保存処理開始:', { logId, predictedWeight: predictionResult.predictedWeight });
+      // 予測体重の保存は一時的に停止
+      console.log('⏸️ 予測体重の保存は停止されています');
+      console.log('📊 予測結果:', { logId, predictedWeight: predictionResult.predictedWeight });
       
+      // ローカルストレージにのみ記録（参考用）
       if (logId) {
-        try {
-          console.log('🔄 確実な方法で予測体重をデータベースに保存中...');
-          await updatePredictedWeightReliably(logId, predictionResult.predictedWeight);
-          console.log('✅ Reliable prediction weight saved to database successfully');
-          
-          // 保存確認（1秒後）
-          setTimeout(async () => {
-            try {
-              const savedData = await verifyDataSaved(logId);
-              if (!savedData?.predicted_weight) {
-                console.warn('⚠️ 予測体重が正しく保存されていません');
-                console.warn('⚠️ データベースのpredicted_weightカラムを確認してください');
-              } else {
-                console.log('✅ 予測体重保存確認完了:', savedData.predicted_weight, 'kg');
-              }
-              
-              // 全体データの最終確認
-              console.log('📊 最終データ確認:', {
-                predicted_weight: savedData?.predicted_weight,
-                prediction_completed_at: savedData?.prediction_completed_at,
-                current_weight_verified: savedData?.current_weight_verified,
-                mother_weight_verified: savedData?.mother_weight_verified,
-                father_weight_verified: savedData?.father_weight_verified
-              });
-            } catch (verifyError) {
-              console.error('❌ 予測体重保存確認エラー:', verifyError);
-            }
-          }, 1000);
-        } catch (dbError) {
-          console.warn('Database prediction completion failed:', dbError);
-          // フォールバック: ローカルストレージに保存
-          try {
-            const completionData = {
-              id: logId,
-              predicted_weight: predictionResult.predictedWeight,
-              prediction_completed_at: new Date().toISOString(),
-              processing_time_ms: processingTime
-            };
-            const localCompletions = JSON.parse(localStorage.getItem('prediction_completions') || '[]');
-            localCompletions.push(completionData);
-            localStorage.setItem('prediction_completions', JSON.stringify(localCompletions));
-            console.log('✅ Prediction completion recorded locally as fallback');
-          } catch (localError) {
-            console.warn('Local completion storage also failed:', localError);
-          }
-        }
-      } else if (logId) {
-        // フォールバック保存の場合はローカルストレージのみ
         try {
           const completionData = {
             id: logId,
             predicted_weight: predictionResult.predictedWeight,
             prediction_completed_at: new Date().toISOString(),
-            processing_time_ms: processingTime
+            processing_time_ms: processingTime,
+            note: 'Database save disabled - local only'
           };
           const localCompletions = JSON.parse(localStorage.getItem('prediction_completions') || '[]');
           localCompletions.push(completionData);
           localStorage.setItem('prediction_completions', JSON.stringify(localCompletions));
-          console.log('✅ Prediction completion recorded locally (fallback source)');
+          console.log('✅ Prediction completion recorded locally only (database save disabled)');
         } catch (localError) {
           console.warn('Local completion storage failed:', localError);
         }
