@@ -3,12 +3,29 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
+// 環境変数のサニタイズと検証
+const sanitizeEnvVar = (value: string): string => {
+  if (!value) return '';
+  // 制御文字、改行、タブ、無効なUTF-8文字を除去
+  return value.replace(/[\x00-\x1F\x7F-\x9F]/g, '').trim();
+};
+
+const cleanSupabaseUrl = sanitizeEnvVar(supabaseUrl);
+const cleanSupabaseAnonKey = sanitizeEnvVar(supabaseAnonKey);
+
+console.log('🔍 Environment variables check:', {
+  url_length: cleanSupabaseUrl?.length || 0,
+  key_length: cleanSupabaseAnonKey?.length || 0,
+  url_valid: cleanSupabaseUrl?.startsWith('https://'),
+  key_valid: cleanSupabaseAnonKey?.length > 50
+});
+
+if (!cleanSupabaseUrl || !cleanSupabaseAnonKey) {
+  throw new Error('Missing or invalid Supabase environment variables');
 }
 
 // LIFF環境対応 - REST API直接使用
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient(cleanSupabaseUrl, cleanSupabaseAnonKey, {
   auth: {
     persistSession: false,
     autoRefreshToken: false,
@@ -21,8 +38,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     headers: {},
     fetch: (url, options = {}) => {
       // 環境変数の値を検証
-      if (!supabaseAnonKey || typeof supabaseAnonKey !== 'string' || supabaseAnonKey.length === 0) {
-        console.error('❌ Invalid supabaseAnonKey:', supabaseAnonKey);
+      if (!cleanSupabaseAnonKey || typeof cleanSupabaseAnonKey !== 'string' || cleanSupabaseAnonKey.length === 0) {
+        console.error('❌ Invalid cleanSupabaseAnonKey:', cleanSupabaseAnonKey);
         return fetch(url, options); // デフォルトのfetchを使用
       }
 
@@ -35,19 +52,29 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
           Object.assign(safeHeaders, options.headers);
         }
         
-        // Content-Typeを安全に設定
-        if (!safeHeaders['Content-Type']) {
-          safeHeaders['Content-Type'] = 'application/json';
+        // Content-Typeを安全に設定（文字列の妥当性を確認）
+        const contentType = 'application/json';
+        if (typeof contentType === 'string' && contentType.length > 0) {
+          safeHeaders['Content-Type'] = contentType;
         }
         
-        // APIキーを安全に設定
-        if (!safeHeaders['apikey']) {
-          safeHeaders['apikey'] = supabaseAnonKey;
+        // APIキーを安全に設定（文字列の妥当性を確認）
+        if (typeof cleanSupabaseAnonKey === 'string' && cleanSupabaseAnonKey.length > 0) {
+          safeHeaders['apikey'] = cleanSupabaseAnonKey;
         }
         
         // Authorizationヘッダーを安全に設定
-        if (!safeHeaders['Authorization']) {
-          safeHeaders['Authorization'] = `Bearer ${supabaseAnonKey}`;
+        const authHeader = `Bearer ${cleanSupabaseAnonKey}`;
+        if (typeof authHeader === 'string' && authHeader.length > 7) { // "Bearer " + key
+          safeHeaders['Authorization'] = authHeader;
+        }
+        
+        // ヘッダー値の最終検証
+        for (const [key, value] of Object.entries(safeHeaders)) {
+          if (typeof value !== 'string' || value.length === 0) {
+            console.warn(`⚠️ Invalid header value for ${key}:`, value);
+            delete safeHeaders[key];
+          }
         }
         
         const customOptions = {

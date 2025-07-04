@@ -265,30 +265,40 @@ export const updatePredictionCompletion = async (
         hint: error.hint
       });
       
-      // ヘッダーエラーの場合、シンプルなクライアントを試行
+      // ヘッダーエラーの場合、REST APIを直接使用
       if (error.message && error.message.includes('Headers')) {
-        console.log('🔄 ヘッダーエラーを検出、シンプルなSupabaseクライアントで再試行...');
+        console.log('🔄 ヘッダーエラーを検出、REST APIで直接更新を試行...');
         try {
-          const { createClient } = await import('@supabase/supabase-js');
-          const simpleSupabase = createClient(
-            import.meta.env.VITE_SUPABASE_URL,
-            import.meta.env.VITE_SUPABASE_ANON_KEY
-          );
+          // 環境変数を安全に取得
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.replace(/[\x00-\x1F\x7F-\x9F]/g, '').trim();
+          const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.replace(/[\x00-\x1F\x7F-\x9F]/g, '').trim();
           
-          const { data: retryData, error: retryError } = await simpleSupabase
-            .from('prediction_logs')
-            .update(updateData)
-            .eq('id', id)
-            .select('id, predicted_weight');
-            
-          if (retryError) {
-            throw retryError;
+          if (!supabaseUrl || !supabaseKey) {
+            throw new Error('環境変数が無効です');
           }
           
-          console.log('✅ シンプルクライアントでの更新成功:', retryData);
+          // REST APIを直接呼び出し
+          const response = await fetch(`${supabaseUrl}/rest/v1/prediction_logs?id=eq.${id}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': supabaseKey,
+              'Authorization': `Bearer ${supabaseKey}`,
+              'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(updateData)
+          });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`REST API error: ${response.status} ${errorText}`);
+          }
+          
+          const retryData = await response.json();
+          console.log('✅ REST API直接呼び出しでの更新成功:', retryData);
           return;
         } catch (retryError) {
-          console.error('❌ シンプルクライアントでも失敗:', retryError);
+          console.error('❌ REST API直接呼び出しも失敗:', retryError);
           throw new Error('予測結果の保存に失敗しました（ヘッダーエラー）');
         }
       }
