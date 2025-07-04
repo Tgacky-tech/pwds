@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 const ProcessingScreen: React.FC = () => {
   const [progressText, setProgressText] = useState('AIが子犬の未来を予測中です…');
+  const [progress, setProgress] = useState(0);
   
   useEffect(() => {
     const textMessages = [
@@ -14,7 +15,18 @@ const ProcessingScreen: React.FC = () => {
       setTimeout(() => setProgressText(text), time)
     );
     
-    return () => timers.forEach(timer => clearTimeout(timer));
+    // プログレスバーを20秒で100%まで更新
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        const newProgress = prev + (100 / (20 * 10)); // 20秒 * 10回/秒 = 200回で100%
+        return newProgress >= 100 ? 100 : newProgress;
+      });
+    }, 100); // 0.1秒ごとに更新
+    
+    return () => {
+      timers.forEach(timer => clearTimeout(timer));
+      clearInterval(progressInterval);
+    };
   }, []);
   
   return (
@@ -47,7 +59,10 @@ const ProcessingScreen: React.FC = () => {
         </p>
         
         <div className="w-80 bg-gray-200 rounded-full h-4 overflow-hidden mx-auto">
-          <div className="bg-gradient-to-r from-green-500 to-blue-600 h-4 rounded-full animate-progress-fast"></div>
+          <div 
+            className="bg-gradient-to-r from-green-500 to-blue-600 h-4 rounded-full transition-all duration-100 ease-linear"
+            style={{ width: `${progress}%` }}
+          ></div>
         </div>
       </div>
     </div>
