@@ -327,7 +327,7 @@ function App() {
 
   switch (currentState) {
     case 'login':
-      return <LoginScreen onLogin={handleLineLogin} onNavigateToForm={() => setCurrentState('form')} />;
+      return <LoginScreen onLogin={handleLineLogin} />;
     case 'form':
       return <FormScreen onSubmit={handleFormSubmit} />;
     case 'processing':

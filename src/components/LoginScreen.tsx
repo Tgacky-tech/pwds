@@ -4,10 +4,9 @@ import { initializeLiff, isLoggedIn, login, getProfile } from '../liff';
 
 interface LoginScreenProps {
   onLogin: () => void;
-  onNavigateToForm: () => void;
 }
 
-const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onNavigateToForm }) => {
+const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   useEffect(() => {
     const init = async () => {
@@ -129,15 +128,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onNavigateToForm }) 
           <span>LINEでログイン</span>
         </button>
 
-        {/* Temporary Form Link */}
-        <div className="text-center mt-4">
-          <button
-            onClick={onNavigateToForm}
-            className="text-blue-600 hover:underline text-sm"
-          >
-            フォーム画面へ（開発用）
-          </button>
-        </div>
 
         {/* Security Notice */}
         {/* <div className="mt-6 p-3 bg-gray-50 rounded-lg">
