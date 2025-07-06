@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DogFormData, PredictionResult, User } from './types';
 import { predictDogGrowthWithGemini } from './utils/geminiApi';
 import { savePredictionStart, updatePredictionCompletion, saveSatisfactionRating, verifyPredictionWeightSaved, verifyAllDataSaved, testDatabaseConnection } from './utils/supabaseApi';
-import { saveDataReliably, updateSatisfactionReliably, verifyDataSaved } from './utils/reliableSupabaseApi';
+import { saveDataReliably, updatePredictedWeightReliably, updateSatisfactionReliably, verifyDataSaved } from './utils/reliableSupabaseApi';
 import { saveDataWithFallback } from './utils/liffCompatibleApi';
 import { logPredictionStart, logPredictionComplete, logSatisfactionRating } from './utils/analytics';
 import './utils/dataExport'; // データエクスポート機能を初期化
@@ -154,30 +154,79 @@ function App() {
       const processingTime = Date.now() - startTime;
       logPredictionComplete(predictionResult.predictedWeight, processingTime);
       
-      // 予測体重の保存は一時的に停止
-      console.log('⏸️ 予測体重の保存は停止されています');
-      console.log('📊 予測結果:', { logId, predictedWeight: predictionResult.predictedWeight });
+      // Gemini API完了後に予測体重をデータベースに保存
+      console.log('🔍 予測体重データベース保存開始:', { logId, predictedWeight: predictionResult.predictedWeight });
       
-      // ローカルストレージにのみ記録（参考用）
       if (logId) {
         try {
-          const completionData = {
-            id: logId,
-            predicted_weight: predictionResult.predictedWeight,
-            prediction_completed_at: new Date().toISOString(),
-            processing_time_ms: processingTime,
-            note: 'Database save disabled - local only'
-          };
-          const localCompletions = JSON.parse(localStorage.getItem('prediction_completions') || '[]');
-          localCompletions.push(completionData);
-          localStorage.setItem('prediction_completions', JSON.stringify(localCompletions));
-          console.log('✅ Prediction completion recorded locally only (database save disabled)');
-        } catch (localError) {
-          console.warn('Local completion storage failed:', localError);
+          console.log('🔄 確実な方法で予測体重をデータベースに保存中...');
+          await updatePredictedWeightReliably(logId, predictionResult.predictedWeight);
+          console.log('✅ Reliable prediction weight saved to database successfully');
+          
+          // 保存確認（1秒後）
+          setTimeout(async () => {
+            try {
+              const savedData = await verifyDataSaved(logId);
+              if (!savedData?.predicted_weight) {
+                console.warn('⚠️ 予測体重が正しく保存されていません');
+                console.warn('⚠️ データベースのpredicted_weightカラムを確認してください');
+              } else {
+                console.log('✅ 予測体重保存確認完了:', savedData.predicted_weight, 'kg');
+              }
+              
+              // 全体データの最終確認
+              console.log('📊 最終データ確認:', {
+                predicted_weight: savedData?.predicted_weight,
+                prediction_completed_at: savedData?.prediction_completed_at,
+                current_weight_verified: savedData?.current_weight_verified,
+                mother_weight_verified: savedData?.mother_weight_verified,
+                father_weight_verified: savedData?.father_weight_verified
+              });
+            } catch (verifyError) {
+              console.error('❌ 予測体重保存確認エラー:', verifyError);
+            }
+          }, 1000);
+        } catch (dbError) {
+          console.warn('Database prediction completion failed:', dbError);
+          // フォールバック: ローカルストレージに保存
+          try {
+            const completionData = {
+              id: logId,
+              predicted_weight: predictionResult.predictedWeight,
+              prediction_completed_at: new Date().toISOString(),
+              processing_time_ms: processingTime,
+              note: 'Database save failed - fallback to local'
+            };
+            const localCompletions = JSON.parse(localStorage.getItem('prediction_completions') || '[]');
+            localCompletions.push(completionData);
+            localStorage.setItem('prediction_completions', JSON.stringify(localCompletions));
+            console.log('✅ Prediction completion recorded locally as fallback');
+          } catch (localError) {
+            console.warn('Local completion storage also failed:', localError);
+          }
         }
       }
 
       setResult(predictionResult);
+      
+      // 結果画面遷移時に予測体重保存の最終確認と再試行
+      setTimeout(async () => {
+        if (logId) {
+          try {
+            const savedData = await verifyDataSaved(logId);
+            if (!savedData?.predicted_weight) {
+              console.log('🔄 結果画面遷移時に予測体重が未保存を検出、再保存を試行...');
+              await updatePredictedWeightReliably(logId, predictionResult.predictedWeight);
+              console.log('✅ 結果画面遷移時の予測体重再保存成功');
+            } else {
+              console.log('✅ 結果画面遷移時確認: 予測体重は既に保存済み:', savedData.predicted_weight, 'kg');
+            }
+          } catch (retryError) {
+            console.warn('❌ 結果画面遷移時の予測体重再保存失敗:', retryError);
+          }
+        }
+      }, 500);
+      
       setCurrentState('result');
     } catch (error) {
       console.error('Prediction failed:', error);
