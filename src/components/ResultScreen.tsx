@@ -378,7 +378,7 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
               </button>
               {openSections.cost && (
                 <div className="px-6 py-4 border-t border-gray-200">
-                  <div className="space-y-6 max-w-4xl mx-auto">
+                  <div className="space-y-6 max-w-4xl mx-auto" style={{ direction: 'ltr' }}>
                     {result.costSimulation.categories.map((category, index) => {
                       const colorClasses = [
                         { bg: "bg-purple-50", text: "text-purple-800", border: "border-purple-200", button: "bg-purple-600" },
@@ -399,11 +399,11 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
                           <div className={`text-sm ${colors.text.replace('800', '700')} mb-3`}>
                             {category.description}
                           </div>
-                          <div className={`${category.items.length > 4 ? 'grid grid-cols-2 gap-4' : 'space-y-2'} text-sm`}>
+                          <div className={`${category.items.length > 4 ? 'grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1' : 'space-y-2'} text-sm`}>
                             {category.items.map((item, itemIndex) => (
-                              <div key={itemIndex} className={`flex justify-between items-start py-2 border-b ${colors.border} min-w-0 gap-3`}>
-                                <span className="flex-1 leading-relaxed break-words">{item.name}</span>
-                                <span className="font-medium flex-shrink-0 whitespace-nowrap">{item.cost}</span>
+                              <div key={itemIndex} className={`flex justify-between items-center py-2 border-b ${colors.border} min-w-0 gap-3`}>
+                                <span className="flex-1 leading-relaxed break-words text-left" style={{ writingMode: 'horizontal-tb', textOrientation: 'mixed' }}>{item.name}</span>
+                                <span className="font-medium flex-shrink-0 whitespace-nowrap text-right">{item.cost}</span>
                               </div>
                             ))}
                           </div>
