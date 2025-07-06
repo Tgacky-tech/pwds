@@ -48,11 +48,19 @@ export default async function handler(req, res) {
     // 性別の英語変換
     const genderEn = gender === "オス" ? "male" : "female";
     
-    // より詳細なプロンプト作成（人とのサイズ比較と具体的なサイズ情報を含む）
+    // より詳細なプロンプト作成（参考画像の有無で変更）
     const sizeInfo = predictedLength && predictedHeight 
       ? `body length ${predictedLength}cm (nose to tail base), height ${predictedHeight}cm (ground to shoulder blade), `
       : '';
-    const enhancedPrompt = `A realistic photo of an adult ${genderEn} ${breed} dog weighing approximately ${predictedWeight}kg, ${sizeInfo}standing next to a human person for size comparison, full body shot of both dog and human, high quality, professional photography. ${prompt}`;
+    
+    let enhancedPrompt;
+    if (referenceImages && referenceImages.length > 0) {
+      // 参考画像がある場合：特徴を抽出して成犬時の姿を生成
+      enhancedPrompt = `Transform this puppy into an adult ${genderEn} ${breed} dog weighing approximately ${predictedWeight}kg, ${sizeInfo}maintaining the same facial features, color patterns, and unique characteristics from the input image. Show the adult dog standing next to a human person for size comparison, full body shot, high quality, professional photography. ${prompt}`;
+    } else {
+      // 参考画像がない場合：従来のプロンプト
+      enhancedPrompt = `A realistic photo of an adult ${genderEn} ${breed} dog weighing approximately ${predictedWeight}kg, ${sizeInfo}standing next to a human person for size comparison, full body shot of both dog and human, high quality, professional photography. ${prompt}`;
+    }
     
     console.log('🎨 FLUX Kontext 画像生成開始:', { breed, gender, predictedWeight });
     console.log('📸 参考画像数:', referenceImages ? referenceImages.length : 0);
@@ -74,13 +82,27 @@ export default async function handler(req, res) {
       }
     };
     
-    // 参考画像が提供されている場合は追加（DataCrunch APIで対応している場合）
+    // 参考画像が提供されている場合は追加（FLUX Kontext APIの正しい形式で）
     if (referenceImages && referenceImages.length > 0) {
       console.log('📎 参考画像を追加中...');
-      // DataCrunch APIの仕様に合わせて参考画像を追加
-      // APIドキュメントで "reference_image" や "image" パラメータが使用可能かを確認
-      data.input.reference_image = referenceImages[0]; // 最初の画像を参考として使用
-      console.log('✅ 参考画像設定完了');
+      // FLUX Kontext APIは "image" パラメータでbase64エンコードされた画像を受け取る
+      const referenceImage = referenceImages[0]; // 最初の画像を参考として使用
+      
+      // base64形式であることを確認（data:image/jpeg;base64, などのプレフィックスを削除）
+      let base64Image = referenceImage;
+      if (base64Image.startsWith('data:image/')) {
+        const parts = base64Image.split(',');
+        base64Image = parts[1];
+        console.log('📎 base64プレフィックス削除:', parts[0]);
+      }
+      
+      // base64画像のサイズを確認（デバッグ用）
+      console.log('📏 base64画像サイズ:', base64Image.length, 'characters');
+      console.log('📏 base64画像プレビュー:', base64Image.substring(0, 50) + '...');
+      
+      data.input.image = base64Image;
+      data.input.enable_base64_output = true; // base64出力を有効化
+      console.log('✅ 参考画像設定完了 (base64形式)');
     }
     
     console.log('🎯 送信データ:', JSON.stringify(data, null, 2));
@@ -130,13 +152,29 @@ export default async function handler(req, res) {
     
     // DataCrunch APIの応答形式を確認して適切に処理
     if (result.output?.outputs && result.output.outputs.length > 0) {
-      const imageUrl = result.output.outputs[0];
-      console.log('✅ FLUX Kontext 画像生成完了:', imageUrl);
-      return res.status(200).json({ imageUrl });
+      let imageResult = result.output.outputs[0];
+      
+      // base64出力の場合はdata URLに変換
+      if (data.input.enable_base64_output && !imageResult.startsWith('http')) {
+        imageResult = `data:image/png;base64,${imageResult}`;
+        console.log('✅ FLUX Kontext 画像生成完了 (base64形式)');
+      } else {
+        console.log('✅ FLUX Kontext 画像生成完了:', imageResult);
+      }
+      
+      return res.status(200).json({ imageUrl: imageResult });
     } else if (result.output?.images && result.output.images.length > 0) {
-      const imageUrl = result.output.images[0];
-      console.log('✅ FLUX Kontext 画像生成完了:', imageUrl);
-      return res.status(200).json({ imageUrl });
+      let imageResult = result.output.images[0];
+      
+      // base64出力の場合はdata URLに変換
+      if (data.input.enable_base64_output && !imageResult.startsWith('http')) {
+        imageResult = `data:image/png;base64,${imageResult}`;
+        console.log('✅ FLUX Kontext 画像生成完了 (base64形式)');
+      } else {
+        console.log('✅ FLUX Kontext 画像生成完了:', imageResult);
+      }
+      
+      return res.status(200).json({ imageUrl: imageResult });
     } else if (result.error) {
       console.error('❌ FLUX Kontext 画像生成失敗:', result.error);
       return res.status(500).json({ error: result.error });
