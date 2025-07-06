@@ -58,7 +58,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onNavigateToForm }) 
               <span className="text-green-600 text-sm font-bold">AI</span>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-800">成犬時サイズ予測サービス(体重・体長・体高を画像とともに)</p>
+              <p className="text-sm font-medium text-gray-800">子犬の成犬時サイズ予測サービス(体重・体長・体高を画像とともに)</p>
               <p className="text-xs text-gray-600">標準的な餌の量・運動でのサイズを表示します</p>
             </div>
           </div>

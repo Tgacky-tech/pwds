@@ -204,7 +204,7 @@ const ResultScreen: React.FC<ResultScreenProps> = ({ result, formData, onReset, 
               >
                 <div className="flex items-center space-x-3">
                   <TrendingUp className="w-5 h-5 text-orange-600" />
-                  <span className="font-semibold text-gray-800">適正体重診断・評価</span>
+                  <span className="font-semibold text-gray-800">現在の体重チェック</span>
                 </div>
                 {openSections.weight ? (
                   <ChevronUp className="w-5 h-5 text-gray-600" />

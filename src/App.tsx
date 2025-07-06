@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DogFormData, PredictionResult, User } from './types';
 import { predictDogGrowthWithGemini } from './utils/geminiApi';
 import { savePredictionStart, updatePredictionCompletion, saveSatisfactionRating, verifyPredictionWeightSaved, verifyAllDataSaved, testDatabaseConnection } from './utils/supabaseApi';
-import { saveDataReliably, updatePredictedWeightReliably, updateSatisfactionReliably, verifyDataSaved } from './utils/reliableSupabaseApi';
+import { saveDataReliably, updatePredictedWeightReliably, updateSatisfactionReliably, verifyDataSaved, savePredictedWeightOnTransition } from './utils/reliableSupabaseApi';
 import { saveDataWithFallback } from './utils/liffCompatibleApi';
 import { logPredictionStart, logPredictionComplete, logSatisfactionRating } from './utils/analytics';
 import './utils/dataExport'; // データエクスポート機能を初期化
@@ -154,28 +154,32 @@ function App() {
       const processingTime = Date.now() - startTime;
       logPredictionComplete(predictionResult.predictedWeight, processingTime);
       
-      // Gemini API完了後に予測体重をデータベースに保存
+      // Gemini API完了後に予測体重をデータベースに保存（強化版）
       console.log('🔍 予測体重データベース保存開始:', { logId, predictedWeight: predictionResult.predictedWeight });
       
       if (logId) {
         try {
           console.log('🔄 確実な方法で予測体重をデータベースに保存中...');
+          console.log('🔍 使用中のAPIキー: 直接設定されたAPIキーを使用中');
+          console.log('🔍 Supabase URL: https://sooyxifnzwyfkrkqpafb.supabase.co');
+          
           await updatePredictedWeightReliably(logId, predictionResult.predictedWeight);
-          console.log('✅ Reliable prediction weight saved to database successfully');
+          console.log('✅ Gemini API完了後の予測体重保存成功');
           
           // 保存確認（1秒後）
           setTimeout(async () => {
             try {
               const savedData = await verifyDataSaved(logId);
               if (!savedData?.predicted_weight) {
-                console.warn('⚠️ 予測体重が正しく保存されていません');
+                console.warn('⚠️ Gemini API完了後の予測体重が正しく保存されていません');
                 console.warn('⚠️ データベースのpredicted_weightカラムを確認してください');
+                console.warn('⚠️ 保存されたデータ:', savedData);
               } else {
-                console.log('✅ 予測体重保存確認完了:', savedData.predicted_weight, 'kg');
+                console.log('✅ Gemini API完了後の予測体重保存確認完了:', savedData.predicted_weight, 'kg');
               }
               
               // 全体データの最終確認
-              console.log('📊 最終データ確認:', {
+              console.log('📊 Gemini API完了後の最終データ確認:', {
                 predicted_weight: savedData?.predicted_weight,
                 prediction_completed_at: savedData?.prediction_completed_at,
                 current_weight_verified: savedData?.current_weight_verified,
@@ -183,11 +187,11 @@ function App() {
                 father_weight_verified: savedData?.father_weight_verified
               });
             } catch (verifyError) {
-              console.error('❌ 予測体重保存確認エラー:', verifyError);
+              console.error('❌ Gemini API完了後の予測体重保存確認エラー:', verifyError);
             }
           }, 1000);
         } catch (dbError) {
-          console.warn('Database prediction completion failed:', dbError);
+          console.warn('❌ Gemini API完了後の予測体重保存失敗:', dbError);
           // フォールバック: ローカルストレージに保存
           try {
             const completionData = {
@@ -209,20 +213,23 @@ function App() {
 
       setResult(predictionResult);
       
-      // 結果画面遷移時に予測体重保存の最終確認と再試行
+      // 結果画面遷移時に予測体重保存の最終確認と再試行（強化版）
       setTimeout(async () => {
         if (logId) {
           try {
-            const savedData = await verifyDataSaved(logId);
-            if (!savedData?.predicted_weight) {
-              console.log('🔄 結果画面遷移時に予測体重が未保存を検出、再保存を試行...');
-              await updatePredictedWeightReliably(logId, predictionResult.predictedWeight);
-              console.log('✅ 結果画面遷移時の予測体重再保存成功');
-            } else {
-              console.log('✅ 結果画面遷移時確認: 予測体重は既に保存済み:', savedData.predicted_weight, 'kg');
-            }
+            console.log('🎯 結果画面遷移時の予測体重保存処理開始');
+            await savePredictedWeightOnTransition(logId, predictionResult.predictedWeight);
+            console.log('✅ 結果画面遷移時の予測体重保存処理完了');
           } catch (retryError) {
-            console.warn('❌ 結果画面遷移時の予測体重再保存失敗:', retryError);
+            console.warn('❌ 結果画面遷移時の予測体重保存失敗:', retryError);
+            // フォールバック: 直接APIで再度試行
+            try {
+              console.log('🔄 フォールバック: 直接API呼び出しで予測体重保存を試行');
+              await updatePredictedWeightReliably(logId, predictionResult.predictedWeight);
+              console.log('✅ フォールバック予測体重保存成功');
+            } catch (fallbackError) {
+              console.error('❌ フォールバック予測体重保存も失敗:', fallbackError);
+            }
           }
         }
       }, 500);

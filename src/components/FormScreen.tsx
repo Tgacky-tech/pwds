@@ -337,7 +337,7 @@ const FormScreen: React.FC<FormScreenProps> = ({ onSubmit }) => {
                     onChange={(e) => handleInputChange('currentWeightVerified', e.target.checked)}
                     className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                   />
-                  <span>入力している体重は自分で確認したものです</span>
+                  <span>自分で直接確認した</span>
                 </label>
               </div>
             </div>
@@ -519,7 +519,7 @@ const FormScreen: React.FC<FormScreenProps> = ({ onSubmit }) => {
                             onChange={(e) => handleInputChange('motherWeightVerified', e.target.checked)}
                             className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-1"
                           />
-                          <span>入力している体重は自分で確認したものです</span>
+                          <span>自分で直接確認した</span>
                         </label>
                       </div>
                     </div>
@@ -553,7 +553,7 @@ const FormScreen: React.FC<FormScreenProps> = ({ onSubmit }) => {
                             onChange={(e) => handleInputChange('fatherWeightVerified', e.target.checked)}
                             className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-1"
                           />
-                          <span>入力している体重は自分で確認したものです</span>
+                          <span>自分で直接確認した</span>
                         </label>
                       </div>
                     </div>
