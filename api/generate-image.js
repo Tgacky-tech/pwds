@@ -56,10 +56,10 @@ export default async function handler(req, res) {
     let enhancedPrompt;
     if (referenceImages && referenceImages.length > 0) {
       // 参考画像がある場合：特徴を抽出して成犬時の姿を生成
-      enhancedPrompt = `Transform this puppy into an adult ${genderEn} ${breed} dog weighing approximately ${predictedWeight}kg, ${sizeInfo}maintaining the same facial features, color patterns, and unique characteristics from the input image. Show the adult dog standing next to a human person for size comparison, full body shot, high quality, professional photography. ${prompt}`;
+      enhancedPrompt = `Transform this puppy into an adult ${genderEn} ${breed} dog weighing approximately ${predictedWeight}kg, ${sizeInfo}maintaining the same facial features, color patterns, and unique characteristics from the input image. Show the adult dog in a natural pose, full body shot, high quality, professional photography. ${prompt}`;
     } else {
       // 参考画像がない場合：従来のプロンプト
-      enhancedPrompt = `A realistic photo of an adult ${genderEn} ${breed} dog weighing approximately ${predictedWeight}kg, ${sizeInfo}standing next to a human person for size comparison, full body shot of both dog and human, high quality, professional photography. ${prompt}`;
+      enhancedPrompt = `A realistic photo of an adult ${genderEn} ${breed} dog weighing approximately ${predictedWeight}kg, ${sizeInfo}in a natural pose, full body shot, high quality, professional photography. ${prompt}`;
     }
     
     console.log('🎨 FLUX Kontext 画像生成開始:', { breed, gender, predictedWeight });
