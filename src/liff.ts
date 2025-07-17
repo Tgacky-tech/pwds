@@ -13,9 +13,7 @@ export const initializeLiff = async () => {
       context: liff.getContext(),
       version: liff.getVersion(),
       isApiAvailable: {
-        shareTargetPicker: liff.isApiAvailable('shareTargetPicker'),
-        scanCode: liff.isApiAvailable('scanCode'),
-        bluetooth: liff.isApiAvailable('bluetooth')
+        shareTargetPicker: liff.isApiAvailable('shareTargetPicker')
       },
       os: liff.getOS(),
       language: liff.getLanguage(),
