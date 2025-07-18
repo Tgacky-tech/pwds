@@ -132,7 +132,7 @@ async function generateSimpleImagePrompt(formData: DogFormData, predictedWeight:
     : '';
     
   // 基本的なプロンプト（入力画像の特徴は参考画像から自動で取得される）
-  const prompt = `A realistic photo of an adult ${genderEn} ${formData.breed || 'mixed breed'} dog weighing approximately ${predictedWeight}kg, ${sizeInfo}standing next to a human person for size comparison, full body shot of both dog and human, high quality, professional photography, natural lighting, outdoor setting`;
+  const prompt = `A realistic photo of an adult ${genderEn} ${formData.breed || 'mixed breed'} dog weighing approximately ${predictedWeight}kg, ${sizeInfo}in a natural pose, full body shot, isolated on a plain white background, high quality, professional photography, no humans, no objects, only the dog`;
   
   console.log('✅ シンプル画像プロンプト生成完了:', prompt);
   return prompt;
@@ -266,9 +266,11 @@ ${imageFeatures ? `- 子犬時の外見特徴: ${imageFeatures}` : ''}
 - 犬種の特徴を正確に反映
 - 成犬らしい堂々とした姿勢
 - 横向きの全身写真
-- 白背景
+- 白背景で犬のみを表示
 - 高品質で自然な写真調
 - 予測された体長と体高の比率を正確に反映
+- 人間や他の物体は一切含めない
+- 犬だけを単独で表示
 ${imageFeatures ? '- 子犬時の毛色や模様などの外見特徴を成犬時に反映' : ''}
 
 プロンプトのみを出力してください（説明文は不要）。
