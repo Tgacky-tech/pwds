@@ -62,7 +62,7 @@ export default async function handler(req, res) {
       enhancedPrompt = `A realistic photo of an adult ${genderEn} ${breed} dog weighing approximately ${predictedWeight}kg, ${sizeInfo}in a natural pose, full body shot, isolated on a plain white background, high quality, professional photography, no humans, no objects, only the dog. ${prompt}`;
     }
     
-    console.log('🎨 FLUX Kontext 画像生成開始:', { breed, gender, predictedWeight });
+    console.log('🎨 FLUX 1.1 Pro 画像生成開始:', { breed, gender, predictedWeight });
     console.log('📸 参考画像数:', referenceImages ? referenceImages.length : 0);
     
     const headers = {
@@ -70,7 +70,7 @@ export default async function handler(req, res) {
       "Content-Type": "application/json"
     };
     
-    // DataCrunch FLUX Kontext API用のデータ
+    // DataCrunch FLUX 1.1 Pro API用のデータ
     const data = {
       input: {
         prompt: enhancedPrompt,
@@ -82,10 +82,10 @@ export default async function handler(req, res) {
       }
     };
     
-    // 参考画像が提供されている場合は追加（FLUX Kontext APIの正しい形式で）
+    // 参考画像が提供されている場合は追加（DataCrunch APIの正しい形式で）
     if (referenceImages && referenceImages.length > 0) {
       console.log('📎 参考画像を追加中...');
-      // FLUX Kontext APIは "image" パラメータでbase64エンコードされた画像を受け取る
+      // DataCrunch APIは "image" パラメータでbase64エンコードされた画像を受け取る
       const referenceImage = referenceImages[0]; // 最初の画像を参考として使用
       
       // base64形式であることを確認（data:image/jpeg;base64, などのプレフィックスを削除）
@@ -107,10 +107,10 @@ export default async function handler(req, res) {
     
     console.log('🎯 送信データ:', JSON.stringify(data, null, 2));
     
-    console.log('📤 FLUX Kontext APIリクエスト送信...');
+    console.log('📤 DataCrunch FLUX 1.1 Pro APIリクエスト送信...');
     
     // 画像生成リクエスト
-    const response = await fetch("https://inference.datacrunch.io/flux-kontext-dev/predict", {
+    const response = await fetch("https://inference.datacrunch.io/flux-1.1-pro/predict", {
       method: "POST",
       headers,
       body: JSON.stringify(data)
@@ -157,9 +157,9 @@ export default async function handler(req, res) {
       // base64出力の場合はdata URLに変換
       if (data.input.enable_base64_output && !imageResult.startsWith('http')) {
         imageResult = `data:image/png;base64,${imageResult}`;
-        console.log('✅ FLUX Kontext 画像生成完了 (base64形式)');
+        console.log('✅ FLUX 1.1 Pro 画像生成完了 (base64形式)');
       } else {
-        console.log('✅ FLUX Kontext 画像生成完了:', imageResult);
+        console.log('✅ FLUX 1.1 Pro 画像生成完了:', imageResult);
       }
       
       return res.status(200).json({ imageUrl: imageResult });
@@ -169,22 +169,22 @@ export default async function handler(req, res) {
       // base64出力の場合はdata URLに変換
       if (data.input.enable_base64_output && !imageResult.startsWith('http')) {
         imageResult = `data:image/png;base64,${imageResult}`;
-        console.log('✅ FLUX Kontext 画像生成完了 (base64形式)');
+        console.log('✅ FLUX 1.1 Pro 画像生成完了 (base64形式)');
       } else {
-        console.log('✅ FLUX Kontext 画像生成完了:', imageResult);
+        console.log('✅ FLUX 1.1 Pro 画像生成完了:', imageResult);
       }
       
       return res.status(200).json({ imageUrl: imageResult });
     } else if (result.error) {
-      console.error('❌ FLUX Kontext 画像生成失敗:', result.error);
+      console.error('❌ FLUX 1.1 Pro 画像生成失敗:', result.error);
       return res.status(500).json({ error: result.error });
     } else {
       console.error('❌ 予期しない応答形式:', result);
-      return res.status(500).json({ error: 'Unexpected response format from FLUX Kontext' });
+      return res.status(500).json({ error: 'Unexpected response format from DataCrunch FLUX 1.1 Pro' });
     }
     
   } catch (error) {
-    console.error('❌ FLUX Kontext 画像生成エラー:', error);
+    console.error('❌ FLUX 1.1 Pro 画像生成エラー:', error);
     console.error('エラースタック:', error instanceof Error ? error.stack : 'No stack trace');
     return res.status(500).json({ 
       error: error instanceof Error ? error.message : 'Unknown error occurred',
